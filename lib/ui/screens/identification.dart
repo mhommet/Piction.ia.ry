@@ -7,20 +7,44 @@ class Identification extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-	backgroundColor: Colors.grey,
-	title: const Text('PICTION.IA.RY APP'),
+        title: const Text('LOGIN PAGE'),
       ),
-      body: const Center(
-	child: Column(
-	  mainAxisAlignment: MainAxisAlignment.center,
-	  children: <Widget>[
-	      Text('Please enter your username'),
-	      Expanded( 
-		child: TextField(key: Key('username'),),
-	      ),
-	      // Button save 
-	  ],
-	),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const Text(
+                'Welcome to Piction.ia.ry',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 30),
+              ),
+              const SizedBox(height: 30),
+              const Text(
+                'Please enter your username',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              const TextField(
+                key: Key('username'),
+                decoration: InputDecoration(
+                  labelText: 'Username',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: () {
+                },
+                child: const Text(
+                  'Save',
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
