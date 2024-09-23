@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 
 class Home extends StatelessWidget {
-  const Home({super.key});
+  const Home({required Key key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -23,27 +23,34 @@ class Home extends StatelessWidget {
                 style: TextStyle(fontSize: 30),
               ),
               const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () {
-                  // Handle the save or login action here
-                  // For example, validate inputs or navigate to another screen
-                },
-                child: const Text(
-                  'Nouvelle partie',
-                ),
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () {
-                  // Handle the save or login action here
-                  // For example, validate inputs or navigate to another screen
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Ionicons.qr_code),
-                    SizedBox(width: 10),
-                    Text('Rejoindre une partie'),
+                SizedBox(
+                width: double.infinity,
+                child: Column(
+                  children: [
+                  ElevatedButton(
+                    onPressed: () {
+                    // Handle the save or login action here
+                    // For example, validate inputs or navigate to another screen
+                    },
+                    child: const Text(
+                    'Nouvelle partie',
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  ElevatedButton(
+                    onPressed: () {
+                    // Handle the save or login action here
+                    // For example, validate inputs or navigate to another screen
+                    },
+                    child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Ionicons.qr_code),
+                      SizedBox(width: 10),
+                      Text('Rejoindre une partie'),
+                    ],
+                    ),
+                  ),
                   ],
                 ),
               ),

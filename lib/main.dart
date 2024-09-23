@@ -1,9 +1,5 @@
+import 'package:appli_flutter/ui/screens/qrCodeScanner.dart';
 import 'package:flutter/material.dart';
-import 'package:appli_flutter/ui/screens/identification.dart';
-import 'package:appli_flutter/ui/screens/home.dart';
-import 'package:appli_flutter/ui/screens/teams.dart';
-import 'package:appli_flutter/ui/screens/challenges.dart';
-import 'package:appli_flutter/ui/screens/loading.dart';
 
 void main() {
   runApp(const MyApp());
@@ -56,7 +52,8 @@ class MyApp extends StatelessWidget {
         ),
         appBarTheme: const AppBarTheme(backgroundColor: Colors.red),
       ),
-      home: const Loading(),
+      // home: const Home(key: Key('home')),
+      home: const QRCodeScannerPage()
     );
   }
 }

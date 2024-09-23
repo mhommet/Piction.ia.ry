@@ -25,13 +25,15 @@ class Teams extends StatelessWidget {
                 style: TextStyle(fontSize: 20),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  // Handle the save or login action here
-                  // For example, validate inputs or navigate to another screen
-                },
-                child: const Text(
-                  'Milan (vous) \n <en attente>',
+              Form(
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Handle the save or login action here
+                    // For example, validate inputs or navigate to another screen
+                  },
+                  child: const Text(
+                    'Milan (vous) \n <en attente>',
+                  ),
                 ),
               ),
               const SizedBox(height: 30),
@@ -42,13 +44,15 @@ class Teams extends StatelessWidget {
                 style: TextStyle(fontSize: 20),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  // Handle the save or login action here
-                  // For example, validate inputs or navigate to another screen
-                },
-                child: const Text(
-                  '<en attente> \n <en attente>',
+              Form(
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Handle the save or login action here
+                    // For example, validate inputs or navigate to another screen
+                  },
+                  child: const Text(
+                    '<en attente> \n <en attente>',
+                  ),
                 ),
               ),
               const Text(
