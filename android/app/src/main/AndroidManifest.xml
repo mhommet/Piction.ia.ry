@@ -3,7 +3,7 @@
     <uses-feature android:name="android.hardware.camera" />
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="appli_flutter"
+        android:label="piction_ia_ry"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

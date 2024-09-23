@@ -3,7 +3,7 @@ import 'challenge_input_style.dart';
 import 'loading.dart'; // Import the loading screen
 
 class ChallengeInputPage extends StatefulWidget {
-  const ChallengeInputPage({super.key});
+  const ChallengeInputPage({super.key, required int gameSessionId});
 
   @override
   _ChallengeInputPageState createState() => _ChallengeInputPageState();

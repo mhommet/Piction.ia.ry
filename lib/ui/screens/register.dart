@@ -1,26 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'identification.dart'; // Importer la page login
 import 'identification_style.dart';
-import 'home.dart'; // Importer la page Home
-import 'register.dart'; // Importer la page Register
 
-class Identification extends StatefulWidget {
-  Identification({required Key key}) : super(key: key);
+class Register extends StatefulWidget {
+  Register({required Key key}) : super(key: key);
 
   @override
-  _IdentificationState createState() => _IdentificationState();
+  _RegisterState createState() => _RegisterState();
 }
 
-class _IdentificationState extends State<Identification> {
+class _RegisterState extends State<Register> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool isLoading = false;
 
-  // Fonction pour envoyer la requête de login à l'API
-  Future<void> _login(BuildContext context) async {
+  // Fonction pour envoyer la requête de register à l'API
+  Future<void> _register(BuildContext context) async {
     if (!_formKey.currentState!.validate()) {
       return; // Si le formulaire n'est pas valide, on arrête l'exécution
     }
@@ -29,7 +27,7 @@ class _IdentificationState extends State<Identification> {
       isLoading = true; // Démarrer le loader
     });
 
-    final url = Uri.parse('https://pictioniary.wevox.cloud/api/login');
+    final url = Uri.parse('https://pictioniary.wevox.cloud/api/players');
     final body = jsonEncode({
       'name': _usernameController.text,
       'password': _passwordController.text,
@@ -42,32 +40,25 @@ class _IdentificationState extends State<Identification> {
         body: body,
       );
 
-      if (response.statusCode == 200) {
-        // Si la connexion est réussie, on parse la réponse
-        final jsonResponse = jsonDecode(response.body);
+      if (response.statusCode == 201) {
+        // Si l'enregistrement est réussi
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account created successfully!')),
+        );
 
-        // Récupérer le token de la réponse JSON
-        final token = jsonResponse['token'];
-
-        // Enregistrer le token dans les préférences partagées
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('authToken', token);
-        await prefs.setString('name', _usernameController.text);
-
-        // Rediriger vers la page Home si le login est réussi
+        // Rediriger vers la page login après création de compte
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => Home(
-              username: _usernameController.text,
-              key: const Key('home'),
+            builder: (context) => Identification(
+              key: const Key('loginPage'),
             ),
           ),
         );
       } else {
-        // Gérer les erreurs de login
+        // Gérer les erreurs d'enregistrement
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login failed: ${response.body}')),
+          SnackBar(content: Text('Registration failed: ${response.body}')),
         );
       }
     } catch (e) {
@@ -87,7 +78,7 @@ class _IdentificationState extends State<Identification> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Login',
+          'Register',
           style: IdentificationStyle.appBarTitleStyle,
         ),
         backgroundColor: IdentificationStyle.appBarBackgroundColor,
@@ -105,7 +96,7 @@ class _IdentificationState extends State<Identification> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 const Text(
-                  'Welcome to Piction.ia.ry',
+                  'Create your account',
                   textAlign: TextAlign.center,
                   style: IdentificationStyle.welcomeTextStyle,
                 ),
@@ -145,31 +136,31 @@ class _IdentificationState extends State<Identification> {
                   },
                 ),
                 IdentificationStyle.spacing30,
-                // Bouton Log In
+                // Bouton Register
                 isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
                   onPressed: () =>
-                      _login(context), // Appel à la fonction _login
+                      _register(context), // Appel à la fonction _register
                   style: IdentificationStyle.elevatedButtonStyle,
                   child: const Text(
-                    'Log In',
+                    'Register',
                     style: IdentificationStyle.buttonTextStyle,
                   ),
                 ),
                 IdentificationStyle.spacing20,
-                // Lien vers Register
+                // Lien vers Login
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => Register(key: const Key('registerPage')),
+                        builder: (context) => Identification(key: const Key('loginPage')),
                       ),
                     );
                   },
                   child: const Text(
-                    'Don\'t have an account? Register here',
+                    'Already have an account? Log in here',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.blue,

@@ -1,4 +1,4 @@
-import 'package:appli_flutter/ui/screens/identification.dart';
+import 'package:piction_ia_ry/ui/screens/identification.dart';
 import 'package:flutter/material.dart';
 
 void main() async {

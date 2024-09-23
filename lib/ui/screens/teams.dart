@@ -4,8 +4,9 @@ import 'challenge_input_page.dart'; // Importer la page ChallengeInputPage
 
 class Teams extends StatefulWidget {
   final String username; // Recevoir le nom de l'utilisateur
+  final int gameSessionId; // Recevoir l'ID de la session de jeu
 
-  const Teams({super.key, required this.username});
+  const Teams({super.key, required this.username, required this.gameSessionId});
 
   @override
   _TeamsState createState() => _TeamsState();
@@ -27,7 +28,11 @@ class _TeamsState extends State<Teams> {
       if (teamBlue.isNotEmpty) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ChallengeInputPage()),
+          MaterialPageRoute(
+            builder: (context) => ChallengeInputPage(
+              gameSessionId: widget.gameSessionId, // Passer l'ID de la session
+            ),
+          ),
         );
       }
     });
@@ -63,17 +68,17 @@ class _TeamsState extends State<Teams> {
               TeamsStyle.spacing20,
               // Afficher les joueurs de l'équipe bleue
               ...teamBlue.map((player) => ElevatedButton(
-                    onPressed: () {
-                      // Action pour les joueurs de l'équipe bleue
-                    },
-                    style: TeamsStyle.teamButtonBlue, // Style du bouton bleu
-                    child: Text(
-                      player,
-                      style: TeamsStyle
-                          .buttonTextStyle, // Style du texte du bouton
-                      textAlign: TextAlign.center,
-                    ),
-                  )),
+                onPressed: () {
+                  // Action pour les joueurs de l'équipe bleue
+                },
+                style: TeamsStyle.teamButtonBlue, // Style du bouton bleu
+                child: Text(
+                  player,
+                  style: TeamsStyle
+                      .buttonTextStyle, // Style du texte du bouton
+                  textAlign: TextAlign.center,
+                ),
+              )),
               TeamsStyle.spacing30,
               // Team 2
               const Text(
@@ -84,17 +89,17 @@ class _TeamsState extends State<Teams> {
               TeamsStyle.spacing20,
               // Afficher les joueurs de l'équipe rouge
               ...teamRed.map((player) => ElevatedButton(
-                    onPressed: () {
-                      // Action pour les joueurs de l'équipe rouge
-                    },
-                    style: TeamsStyle.teamButtonRed, // Style du bouton rouge
-                    child: Text(
-                      player,
-                      style: TeamsStyle
-                          .buttonTextStyle, // Style du texte du bouton
-                      textAlign: TextAlign.center,
-                    ),
-                  )),
+                onPressed: () {
+                  // Action pour les joueurs de l'équipe rouge
+                },
+                style: TeamsStyle.teamButtonRed, // Style du bouton rouge
+                child: Text(
+                  player,
+                  style: TeamsStyle
+                      .buttonTextStyle, // Style du texte du bouton
+                  textAlign: TextAlign.center,
+                ),
+              )),
               TeamsStyle.spacing30,
               // Info sur le démarrage automatique
               const Text(
