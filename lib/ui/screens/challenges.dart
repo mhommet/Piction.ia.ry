@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'challenges_style.dart';
 
 class Challenges extends StatefulWidget {
   const Challenges({super.key});
@@ -30,10 +31,15 @@ class _ChallengesState extends State<Challenges> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Saisie des challenges'),
-        backgroundColor: Colors.grey[300],
-        foregroundColor: Colors.black,
+        title: const Text(
+          'Saisie des challenges',
+          style: ChallengesStyle.appBarTitleStyle,
+        ),
+        backgroundColor: ChallengesStyle.appBarBackgroundColor,
+        elevation: 0,
+        iconTheme: ChallengesStyle.appBarIconTheme,
       ),
+      backgroundColor: ChallengesStyle.pageBackgroundColor,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -57,9 +63,10 @@ class _ChallengesState extends State<Challenges> {
             ),
             Center(
               child: CircleAvatar(
-                backgroundColor: Colors.grey,
+                backgroundColor: ChallengesStyle.addChallengeButtonColor,
                 child: IconButton(
-                  icon: const Icon(Icons.add, color: Colors.white),
+                  icon: const Icon(Icons.add,
+                      color: ChallengesStyle.addChallengeIconColor),
                   onPressed: () {
                     _openAddChallengeModal(context);
                   },
@@ -92,23 +99,24 @@ class _ChallengesState extends State<Challenges> {
                   title = value;
                 },
               ),
-                TextField(
+              TextField(
                 decoration: const InputDecoration(labelText: 'Tag'),
                 onChanged: (value) {
                   tag = value;
                 },
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton(
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
                 onPressed: () {
                   setState(() {
-                  if (tag.isNotEmpty) {
-                    tags.add(tag);
-                  }
+                    if (tag.isNotEmpty) {
+                      tags.add(tag);
+                    }
                   });
                 },
+                style: ChallengesStyle.elevatedButtonStyle,
                 child: const Text('Ajouter Tag'),
-                ),
+              ),
               Wrap(
                 spacing: 8,
                 children: tags.map((tag) => Chip(label: Text(tag))).toList(),
@@ -129,6 +137,7 @@ class _ChallengesState extends State<Challenges> {
                 }
                 Navigator.of(context).pop();
               },
+              style: ChallengesStyle.elevatedButtonStyle,
               child: const Text('Ajouter'),
             ),
           ],
@@ -153,8 +162,10 @@ class ChallengeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      shape: ChallengesStyle.cardShape,
+      elevation: 3,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: ChallengesStyle.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -163,22 +174,28 @@ class ChallengeCard extends StatelessWidget {
               children: [
                 Text(
                   'Challenge #$number',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: ChallengesStyle.challengeTitleStyle,
                 ),
-                const Icon(Icons.delete_outline),
+                const Icon(Icons.delete_outline,
+                    color: ChallengesStyle.iconDeleteColor),
               ],
             ),
             const SizedBox(height: 8),
-            Text(title),
+            Text(
+              title,
+              style: ChallengesStyle.challengeDescriptionStyle,
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: tags
-                  .map((tag) => Chip(
-                        label: Text(tag),
-                        backgroundColor: Colors.red,
-                        labelStyle: const TextStyle(color: Colors.white),
-                      ))
+                  .map(
+                    (tag) => Chip(
+                      label: Text(tag),
+                      backgroundColor: ChallengesStyle.chipBackgroundColor,
+                      labelStyle: ChallengesStyle.chipTextStyle,
+                    ),
+                  )
                   .toList(),
             ),
           ],
@@ -186,4 +203,10 @@ class ChallengeCard extends StatelessWidget {
       ),
     );
   }
+}
+
+void main() {
+  runApp(const MaterialApp(
+    home: Challenges(),
+  ));
 }

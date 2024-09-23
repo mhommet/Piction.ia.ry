@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'qr_code_scanner_style.dart';
 
 class QRCodeScannerPage extends StatefulWidget {
   const QRCodeScannerPage({super.key});
@@ -29,9 +30,16 @@ class _QRCodeScannerPageState extends State<QRCodeScannerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('QR Code Scanner'),
-        backgroundColor: Colors.blue,
+        title: const Text(
+          'QR Code Scanner',
+          style: QRCodeScannerStyle.appBarTitleStyle, // Style du titre
+        ),
+        backgroundColor:
+            QRCodeScannerStyle.appBarBackgroundColor, // Couleur de fond AppBar
+        elevation: 0,
+        iconTheme: QRCodeScannerStyle.appBarIconTheme, // Style des icônes
       ),
+      backgroundColor: QRCodeScannerStyle.backgroundColor, // Couleur de fond
       body: Column(
         children: <Widget>[
           Expanded(
@@ -40,11 +48,16 @@ class _QRCodeScannerPageState extends State<QRCodeScannerPage> {
               key: qrKey,
               onQRViewCreated: _onQRViewCreated,
               overlay: QrScannerOverlayShape(
-                borderColor: Colors.red,
-                borderRadius: 10,
-                borderLength: 30,
-                borderWidth: 10,
-                cutOutSize: 300,
+                borderColor: QRCodeScannerStyle
+                    .overlayBorderColor, // Couleur de la bordure
+                borderRadius: QRCodeScannerStyle
+                    .overlayBorderRadius, // Rayon de la bordure
+                borderLength: QRCodeScannerStyle
+                    .overlayBorderLength, // Longueur de la bordure
+                borderWidth: QRCodeScannerStyle
+                    .overlayBorderWidth, // Largeur de la bordure
+                cutOutSize: QRCodeScannerStyle
+                    .overlayCutOutSize, // Taille de la découpe
               ),
             ),
           ),
@@ -52,8 +65,16 @@ class _QRCodeScannerPageState extends State<QRCodeScannerPage> {
             flex: 1,
             child: Center(
               child: qrCodeResult != null
-                  ? Text('Résultat du scan: $qrCodeResult')
-                  : const Text('Scanne un QR Code'),
+                  ? Text(
+                      'Résultat du scan: $qrCodeResult',
+                      style: QRCodeScannerStyle
+                          .resultTextStyle, // Style du texte de résultat
+                    )
+                  : const Text(
+                      'Scanne un QR Code',
+                      style: QRCodeScannerStyle
+                          .waitingTextStyle, // Style du texte d'attente
+                    ),
             ),
           ),
         ],

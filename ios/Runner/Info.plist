@@ -48,4 +48,10 @@
 		<key>NSCameraUsageDescription</key>
 		<string>Cette application a besoin d'accéder à la caméra pour scanner des QR codes.</string>
 	</dict>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true />
+	</dict>
+
 </plist>

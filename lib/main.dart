@@ -1,7 +1,8 @@
-import 'package:appli_flutter/ui/screens/qrCodeScanner.dart';
+import 'package:appli_flutter/ui/screens/identification.dart';
 import 'package:flutter/material.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -13,47 +14,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Piction.ia.ry',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
-        useMaterial3: true,
-        textTheme: const TextTheme(
-          titleMedium: TextStyle(fontSize: 30),
-          titleSmall: TextStyle(fontSize: 20),
-          titleLarge: TextStyle(fontSize: 40),
-        ),
-        textButtonTheme: const TextButtonThemeData(
-          style: ButtonStyle(
-            backgroundColor: WidgetStatePropertyAll<Color>(Colors.red),
-            foregroundColor: WidgetStatePropertyAll<Color>(Colors.white),
-            // Fontsize
-            textStyle: WidgetStatePropertyAll<TextStyle>(
-                TextStyle(fontSize: 20)),
-            padding: WidgetStatePropertyAll<EdgeInsets>(EdgeInsets.all(16)),
-          ),
-        ),
-        elevatedButtonTheme: const ElevatedButtonThemeData(
-          style: ButtonStyle(
-            backgroundColor: WidgetStatePropertyAll<Color>(Colors.red),
-            foregroundColor: WidgetStatePropertyAll<Color>(Colors.white),
-            textStyle: WidgetStatePropertyAll<TextStyle>(
-                TextStyle(fontSize: 20)),
-            padding: WidgetStatePropertyAll<EdgeInsets>(EdgeInsets.all(16)),
-          ),
-        ),
-        outlinedButtonTheme: const OutlinedButtonThemeData(
-          style: ButtonStyle(
-            side: WidgetStatePropertyAll<BorderSide>(
-                BorderSide(color: Colors.red)),
-            foregroundColor: WidgetStatePropertyAll<Color>(Colors.red),
-            textStyle: WidgetStatePropertyAll<TextStyle>(
-                TextStyle(fontSize: 20)),
-            padding: WidgetStatePropertyAll<EdgeInsets>(EdgeInsets.all(16)),
-          ),
-        ),
-        appBarTheme: const AppBarTheme(backgroundColor: Colors.red),
-      ),
       // home: const Home(key: Key('home')),
-      home: const QRCodeScannerPage()
+      home: Identification(key: const Key('id')),
     );
   }
 }

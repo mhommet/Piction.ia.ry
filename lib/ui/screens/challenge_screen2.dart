@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'challenge_screen2_style.dart';
 
 class ChallengeScreen2 extends StatelessWidget {
   const ChallengeScreen2({super.key});
@@ -6,7 +7,7 @@ class ChallengeScreen2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[100], // Couleur de fond similaire à l'image
+      backgroundColor: ChallengeScreen2Style.backgroundColor, // Fond harmonisé
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -16,20 +17,17 @@ class ChallengeScreen2 extends StatelessWidget {
             // Chronomètre
             const Text(
               'Chrono',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: ChallengeScreen2Style.chronoTitleStyle,
             ),
             const Text(
               '232',
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+              style: ChallengeScreen2Style.chronoValueStyle,
             ),
             const SizedBox(height: 16),
             // Scores des équipes
             Container(
               padding: const EdgeInsets.all(8.0),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(8),
-              ),
+              decoration: ChallengeScreen2Style.scoresContainerDecoration,
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -37,16 +35,12 @@ class ChallengeScreen2 extends StatelessWidget {
                     children: [
                       Text(
                         'Equipe bleue',
-                        style: TextStyle(fontSize: 16),
+                        style: ChallengeScreen2Style.teamScoreLabelStyle,
                       ),
                       SizedBox(height: 4),
                       Text(
                         '89',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
+                        style: ChallengeScreen2Style.blueTeamScoreStyle,
                       ),
                     ],
                   ),
@@ -54,16 +48,12 @@ class ChallengeScreen2 extends StatelessWidget {
                     children: [
                       Text(
                         'Equipe rouge',
-                        style: TextStyle(fontSize: 16),
+                        style: ChallengeScreen2Style.teamScoreLabelStyle,
                       ),
                       SizedBox(height: 4),
                       Text(
                         '93',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
-                        ),
+                        style: ChallengeScreen2Style.redTeamScoreStyle,
                       ),
                     ],
                   ),
@@ -75,11 +65,11 @@ class ChallengeScreen2 extends StatelessWidget {
             Container(
               height: 200,
               width: double.infinity,
-              color: Colors.grey[300],
+              decoration: ChallengeScreen2Style.placeholderDecoration,
               child: const Center(
                 child: Text(
                   'Image Placeholder',
-                  style: TextStyle(color: Colors.black45, fontSize: 18),
+                  style: ChallengeScreen2Style.placeholderStyle,
                 ),
               ),
             ),
@@ -87,7 +77,7 @@ class ChallengeScreen2 extends StatelessWidget {
             // Propositions des équipiers
             const Text(
               'Les propositions de votre équipier',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: ChallengeScreen2Style.proposalTitleStyle,
             ),
             const SizedBox(height: 8),
             Column(
@@ -123,7 +113,7 @@ class ChallengeScreen2 extends StatelessWidget {
     return Chip(
       label: Text(word),
       backgroundColor: color,
-      labelStyle: const TextStyle(color: Colors.white),
+      labelStyle: ChallengeScreen2Style.chipTextStyle,
     );
   }
 }
