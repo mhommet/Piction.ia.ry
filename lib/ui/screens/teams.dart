@@ -1,10 +1,11 @@
-import 'dart:async'; // Import nécessaire pour le Timer
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'challenge_input_page.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wakelock/wakelock.dart';
 import 'teams_style.dart';
 
 class Teams extends StatefulWidget {
@@ -20,16 +21,20 @@ class Teams extends StatefulWidget {
 class _TeamsState extends State<Teams> {
   List<String> teamBlue = [];
   List<String> teamRed = [];
-  Timer? _refreshTimer; // Timer pour actualiser les données de session
-  Timer? _countdownTimer; // Timer pour le compte à rebours
-  int countdownSeconds = 10; // Compteur initial du compte à rebours
-  bool isCountdownActive = false; // Pour vérifier si le compte à rebours est en cours
+  Timer? _refreshTimer;
+  Timer? _countdownTimer;
+  int countdownSeconds = 10;
+  bool isCountdownActive = false;
 
   @override
   void initState() {
     super.initState();
+    Wakelock.enable();
+    _startRefreshTimer();
     _fetchGameSessionData();
-    // Démarrer le Timer pour rafraîchir les données toutes les 5 secondes
+  }
+
+  void _startRefreshTimer() {
     _refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) {
       _fetchGameSessionData();
     });
@@ -58,19 +63,24 @@ class _TeamsState extends State<Teams> {
       if (response.statusCode == 200) {
         final sessionData = jsonDecode(response.body);
 
-        // Vider les listes pour éviter les doublons
-        teamBlue.clear();
-        teamRed.clear();
+        // Préparer les nouvelles listes pour comparaison
+        List<String> newTeamBlue = [];
+        List<String> newTeamRed = [];
 
-        // Récupérer les noms des joueurs pour chaque équipe
-        await _fetchPlayerNames(sessionData['blue_team'], teamBlue, token);
-        await _fetchPlayerNames(sessionData['red_team'], teamRed, token);
+        await _fetchPlayerNames(sessionData['blue_team'], newTeamBlue, token);
+        await _fetchPlayerNames(sessionData['red_team'], newTeamRed, token);
 
-        // Mettre à jour l'état avec les noms des joueurs
-        setState(() {});
+        // Mettre à jour l'état seulement si les listes ont changé
+        if (!listEquals(newTeamBlue, teamBlue) || !listEquals(newTeamRed, teamRed)) {
+          setState(() {
+            teamBlue = newTeamBlue;
+            teamRed = newTeamRed;
+          });
+        }
 
-        // Si chaque équipe a un joueur, démarrer le compte à rebours
+        // Si chaque équipe a un joueur, arrêter le timer et démarrer le compte à rebours
         if (teamBlue.length == 1 && teamRed.length == 1 && !isCountdownActive) {
+          _refreshTimer?.cancel();
           _startCountdown();
         }
       } else {
@@ -117,7 +127,7 @@ class _TeamsState extends State<Teams> {
           countdownSeconds--;
         } else {
           _countdownTimer?.cancel();
-          // Rediriger vers ChallengeInputPage une fois le compte à rebours terminé
+          Wakelock.disable();
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -133,8 +143,9 @@ class _TeamsState extends State<Teams> {
 
   @override
   void dispose() {
-    _refreshTimer?.cancel(); // Annuler le Timer pour éviter les fuites de mémoire
-    _countdownTimer?.cancel(); // Annuler le Timer du compte à rebours
+    _refreshTimer?.cancel();
+    _countdownTimer?.cancel();
+    Wakelock.disable();
     super.dispose();
   }
 
@@ -166,7 +177,6 @@ class _TeamsState extends State<Teams> {
                 style: TeamsStyle.teamTitleBlue,
               ),
               TeamsStyle.spacing20,
-              // Afficher les joueurs de l'équipe bleue
               ...teamBlue.map((player) => ElevatedButton(
                 onPressed: () {},
                 style: TeamsStyle.teamButtonBlue,
@@ -184,7 +194,6 @@ class _TeamsState extends State<Teams> {
                 style: TeamsStyle.teamTitleRed,
               ),
               TeamsStyle.spacing20,
-              // Afficher les joueurs de l'équipe rouge
               ...teamRed.map((player) => ElevatedButton(
                 onPressed: () {},
                 style: TeamsStyle.teamButtonRed,
