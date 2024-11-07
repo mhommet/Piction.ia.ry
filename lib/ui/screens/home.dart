@@ -3,7 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:ionicons/ionicons.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'teams.dart'; // Importer la page Teams
+import 'teams.dart';
+import 'qr_code_scanner.dart';
 
 class Home extends StatelessWidget {
   final String username; // Ajouter une variable pour stocker le nom d'utilisateur
@@ -11,10 +12,18 @@ class Home extends StatelessWidget {
   const Home({required Key key, required this.username})
       : super(key: key); // Recevoir le nom d'utilisateur
 
+  // Ajoute le username dans prefs.getString('username')
+  Future<void> _saveUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('username', username);
+  }
+
   // Fonction pour créer une session de jeu
   Future<void> _createGameSession(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('authToken');
+    // Save the username
+    await _saveUsername();
 
     if (token == null) {
       // Gérer l'absence de token (redirection vers login ou message d'erreur)
@@ -62,7 +71,7 @@ class Home extends StatelessWidget {
   // Fonction pour rejoindre une session de jeu
   Future<void> _joinGameSession(BuildContext context, int gameSessionId, String token) async {
     final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/$gameSessionId/join');
-
+    await _saveUsername(); // Sauvegarder le nom d'utilisateur
     try {
       final response = await http.post(
         url,
@@ -139,7 +148,12 @@ class Home extends StatelessWidget {
                     const SizedBox(height: 30),
                     ElevatedButton(
                       onPressed: () {
-                        // Action pour rejoindre une partie
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const QRCodeScannerPage(),
+                          ),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green, // Bouton vert

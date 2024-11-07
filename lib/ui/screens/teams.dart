@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'teams_style.dart';
 import 'challenge_input_page.dart'; // Importer la page ChallengeInputPage
+import 'package:qr_flutter/qr_flutter.dart';
+
+import 'teams_style.dart'; // Assuming TeamsStyle is defined in teams_style.dart
 
 class Teams extends StatefulWidget {
   final String username; // Recevoir le nom de l'utilisateur
@@ -23,9 +25,9 @@ class _TeamsState extends State<Teams> {
     // Ajouter le joueur à l'équipe bleue au moment de l'initialisation de la page
     teamBlue.add(widget.username); // Ajouter l'utilisateur à la Team Blue
 
-    // Si l'équipe bleue contient au moins un joueur, rediriger vers ChallengeInputPage
+    // Si il y a un joueur par équipe, rediriger vers ChallengeInputPage
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (teamBlue.isNotEmpty) {
+      if (teamBlue.length == 1 && teamRed.length == 1) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -42,7 +44,7 @@ class _TeamsState extends State<Teams> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'TEAMS COMPOSITION',
           style: TeamsStyle.appBarTitleStyle, // Style du titre de l'AppBar
         ),
@@ -60,7 +62,7 @@ class _TeamsState extends State<Teams> {
             children: <Widget>[
               TeamsStyle.spacing30,
               // Team 1
-              const Text(
+              Text(
                 'Team Blue',
                 textAlign: TextAlign.center,
                 style: TeamsStyle.teamTitleBlue, // Style de l'équipe bleue
@@ -74,14 +76,13 @@ class _TeamsState extends State<Teams> {
                 style: TeamsStyle.teamButtonBlue, // Style du bouton bleu
                 child: Text(
                   player,
-                  style: TeamsStyle
-                      .buttonTextStyle, // Style du texte du bouton
+                  style: TeamsStyle.buttonTextStyle, // Style du texte du bouton
                   textAlign: TextAlign.center,
                 ),
               )),
               TeamsStyle.spacing30,
               // Team 2
-              const Text(
+              Text(
                 'Team Red',
                 textAlign: TextAlign.center,
                 style: TeamsStyle.teamTitleRed, // Style de l'équipe rouge
@@ -95,16 +96,24 @@ class _TeamsState extends State<Teams> {
                 style: TeamsStyle.teamButtonRed, // Style du bouton rouge
                 child: Text(
                   player,
-                  style: TeamsStyle
-                      .buttonTextStyle, // Style du texte du bouton
+                  style: TeamsStyle.buttonTextStyle, // Style du texte du bouton
                   textAlign: TextAlign.center,
                 ),
               )),
               TeamsStyle.spacing30,
               // Info sur le démarrage automatique
-              const Text(
+              Text(
                 'The game will start automatically when all players are ready',
                 style: TeamsStyle.infoTextStyle, // Style du texte d'information
+              ),
+              TeamsStyle.spacing30,
+              // QR Code pour rejoindre la session
+              Center(
+                child: QrImageView(
+                  data: widget.gameSessionId.toString(), // Utilise l'ID de la session
+                  version: QrVersions.auto,
+                  size: 200.0,
+                ),
               ),
             ],
           ),
