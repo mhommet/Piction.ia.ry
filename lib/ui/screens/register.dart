@@ -5,7 +5,7 @@ import 'identification.dart'; // Importer la page login
 import 'identification_style.dart';
 
 class Register extends StatefulWidget {
-  Register({required Key key}) : super(key: key);
+  const Register({required Key key}) : super(key: key);
 
   @override
   _RegisterState createState() => _RegisterState();
@@ -50,8 +50,8 @@ class _RegisterState extends State<Register> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => Identification(
-              key: const Key('loginPage'),
+            builder: (context) => const Identification(
+              key: Key('loginPage'),
             ),
           ),
         );
@@ -155,7 +155,7 @@ class _RegisterState extends State<Register> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => Identification(key: const Key('loginPage')),
+                        builder: (context) => const Identification(key: Key('loginPage')),
                       ),
                     );
                   },

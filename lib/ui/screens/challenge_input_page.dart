@@ -1,26 +1,70 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'challenge_input_style.dart';
-import 'loading.dart'; // Import the loading screen
+import 'loading.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ChallengeInputPage extends StatefulWidget {
-  const ChallengeInputPage({super.key, required int gameSessionId});
+  final int gameSessionId; // Recevoir l'ID de la session de jeu
+
+  const ChallengeInputPage({super.key, required this.gameSessionId});
 
   @override
   _ChallengeInputPageState createState() => _ChallengeInputPageState();
 }
 
 class _ChallengeInputPageState extends State<ChallengeInputPage> {
-  // List of challenges in memory
   List<Map<String, dynamic>> challenges = [];
-
-  // Variables for fixed parts of the sentence
   String firstWord = 'Un';
   String thirdWord = 'sur';
 
-  // Method to open a modal to add a challenge using a bottom sheet (no dimming)
+  // Méthode pour envoyer les défis à la session
+  Future<void> submitChallenges() async {
+    final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/challenges');
+    final token = await getToken(); // Récupérer le token d'authentification
+
+    for (var challenge in challenges) {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'first_word': challenge['first_word'],
+          'second_word': challenge['second_word'],
+          'third_word': challenge['third_word'],
+          'fourth_word': challenge['fourth_word'],
+          'forbidden_words': challenge['tags'],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print("Défi ajouté avec succès");
+      } else {
+        print("Erreur lors de l'ajout du défi: ${response.body}");
+      }
+    }
+
+    // Naviguer vers la page de loading
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Loading(challenges: challenges),
+      ),
+    );
+  }
+
+  // Récupérer le token d'authentification
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('authToken');
+  }
+
   void _openAddChallengeModal(BuildContext context) {
-    String secondWord = ''; // Free text for word 1
-    String fourthWord = ''; // Free text for word 2
+    String secondWord = '';
+    String fourthWord = '';
     List<String> tags = [];
     String currentTag = '';
 
@@ -36,15 +80,12 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Buttons for Un/Une with capital letters
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: firstWord == 'Un'
-                              ? Colors.blue
-                              : Colors.grey[300],
+                          backgroundColor: firstWord == 'Un' ? Colors.blue : Colors.grey[300],
                         ),
                         onPressed: () {
                           setModalState(() {
@@ -56,9 +97,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                       const SizedBox(width: 10),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: firstWord == 'Une'
-                              ? Colors.blue
-                              : Colors.grey[300],
+                          backgroundColor: firstWord == 'Une' ? Colors.blue : Colors.grey[300],
                         ),
                         onPressed: () {
                           setModalState(() {
@@ -70,7 +109,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  // Free text input (word 1)
                   TextField(
                     decoration: const InputDecoration(hintText: 'Mot 1'),
                     onChanged: (value) {
@@ -78,15 +116,12 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  // Buttons for sur/dans with lowercase
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: thirdWord == 'sur'
-                              ? Colors.blue
-                              : Colors.grey[300],
+                          backgroundColor: thirdWord == 'sur' ? Colors.blue : Colors.grey[300],
                         ),
                         onPressed: () {
                           setModalState(() {
@@ -98,9 +133,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                       const SizedBox(width: 10),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: thirdWord == 'dans'
-                              ? Colors.blue
-                              : Colors.grey[300],
+                          backgroundColor: thirdWord == 'dans' ? Colors.blue : Colors.grey[300],
                         ),
                         onPressed: () {
                           setModalState(() {
@@ -112,7 +145,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  // Free text input (word 2)
                   TextField(
                     decoration: const InputDecoration(hintText: 'Mot 2'),
                     onChanged: (value) {
@@ -120,7 +152,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  // Add tag
                   TextField(
                     decoration: const InputDecoration(labelText: 'Tag'),
                     onChanged: (value) {
@@ -132,34 +163,33 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                     onPressed: () {
                       if (currentTag.isNotEmpty) {
                         setModalState(() {
-                          tags.add(currentTag); // Add the tag to the list
-                          currentTag = ''; // Reset the tag field
+                          tags.add(currentTag);
+                          currentTag = '';
                         });
                       }
                     },
                     child: const Text('Ajouter Tag'),
                   ),
                   const SizedBox(height: 8),
-                  // Display added tags in a Wrap
                   Wrap(
                     spacing: 8,
-                    children:
-                        tags.map((tag) => Chip(label: Text(tag))).toList(),
+                    children: tags.map((tag) => Chip(label: Text(tag))).toList(),
                   ),
                   const SizedBox(height: 8),
-                  // Add challenge button
                   ElevatedButton(
                     onPressed: () {
-                      if (secondWord.isNotEmpty &&
-                          fourthWord.isNotEmpty &&
-                          tags.isNotEmpty) {
-                        String challengeTitle =
-                            '$firstWord $secondWord $thirdWord $fourthWord';
+                      if (secondWord.isNotEmpty && fourthWord.isNotEmpty && tags.isNotEmpty) {
+                        String challengeTitle = '$firstWord $secondWord $thirdWord $fourthWord';
                         setState(() {
-                          challenges
-                              .add({'title': challengeTitle, 'tags': tags});
+                          challenges.add({
+                            'first_word': firstWord.toLowerCase(),
+                            'second_word': secondWord,
+                            'third_word': thirdWord,
+                            'fourth_word': fourthWord,
+                            'tags': tags
+                          });
                         });
-                        Navigator.of(context).pop(); // Close the modal
+                        Navigator.of(context).pop();
                       }
                     },
                     child: const Text('Ajouter'),
@@ -173,27 +203,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
     );
   }
 
-  // Method to remove a challenge
-  void _removeChallenge(int index) {
-    setState(() {
-      challenges.removeAt(index);
-    });
-  }
-
-// Méthode pour naviguer vers l'écran de loading puis vers challenge_screen avec les challenges
-  Future<void> _validateAndNavigate() async {
-    // Naviguer vers la page Loading en passant les défis
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            Loading(challenges: challenges), // Pass challenges
-      ),
-    );
-  }
-
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -206,7 +215,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.send, color: Colors.blue),
-            onPressed: _validateAndNavigate, // Call validation method
+            onPressed: submitChallenges, // Envoyer les défis à la session
           ),
         ],
         elevation: 0,
@@ -217,7 +226,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
         margin: const EdgeInsets.only(bottom: 70),
         child: FloatingActionButton(
           onPressed: () {
-        _openAddChallengeModal(context);
+            _openAddChallengeModal(context);
           },
           backgroundColor: const Color.fromARGB(255, 121, 195, 255),
           child: const Icon(Icons.add),
@@ -226,34 +235,29 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-            children: [
+          children: [
             Expanded(
               child: ListView.builder(
-              itemCount: challenges.length,
-              itemBuilder: (context, index) {
-                final challenge = challenges[index];
-                return _buildChallengeCard(
-                  index, challenge['title'], challenge['tags']);
-              },
+                itemCount: challenges.length,
+                itemBuilder: (context, index) {
+                  final challenge = challenges[index];
+                  return _buildChallengeCard(index, challenge['title'], challenge['tags']);
+                },
               ),
             ),
             const SizedBox(height: 16),
-            // Validation button
             SizedBox(
-              width: double.infinity, // Set the width to match the parent
+              width: double.infinity,
               child: ElevatedButton(
-              onPressed: _validateAndNavigate, // Navigate to loading
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 126, 255, 130),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text(
-                'Valider et continuer',
-                style: TextStyle(
-                color: Colors.white,
-                fontSize: 18, // Increase the font size
+                onPressed: submitChallenges, // Envoyer les défis
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 126, 255, 130),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-              ),
+                child: const Text(
+                  'Valider et continuer',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
               ),
             ),
           ],
@@ -267,16 +271,12 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
       margin: ChallengeInputStyle.cardMargin,
       shape: ChallengeInputStyle.cardShape,
       elevation: 3,
-      color: Colors.white, // Remove focus background (no gray background)
       child: Padding(
         padding: ChallengeInputStyle.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: ChallengeInputStyle.challengeTitleStyle,
-            ),
+            Text(title, style: ChallengeInputStyle.challengeTitleStyle),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -286,10 +286,11 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
             Align(
               alignment: Alignment.centerRight,
               child: IconButton(
-                icon: const Icon(Icons.delete,
-                    color: ChallengeInputStyle.iconDeleteColor),
+                icon: const Icon(Icons.delete, color: ChallengeInputStyle.iconDeleteColor),
                 onPressed: () {
-                  _removeChallenge(index); // Remove the challenge
+                  setState(() {
+                    challenges.removeAt(index);
+                  });
                 },
               ),
             ),
@@ -310,10 +311,7 @@ class _ChallengeTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: ChallengeInputStyle.tagDecoration,
-      child: Text(
-        label,
-        style: ChallengeInputStyle.tagTextStyle,
-      ),
+      child: Text(label, style: ChallengeInputStyle.tagTextStyle),
     );
   }
 }

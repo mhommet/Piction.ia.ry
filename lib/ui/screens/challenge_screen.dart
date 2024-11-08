@@ -23,7 +23,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       isLoading = true; // Afficher un loader pendant la génération
     });
 
-    final apiUrl = 'https://api.stablediffusion.com/generate'; // Exemples d'API
+    const apiUrl = 'https://api.stablediffusion.com/generate'; // Exemples d'API
     final prompt = widget.challenges.isNotEmpty
         ? widget.challenges[0]['title']
         : 'Une poule sur un mur'; // Exemple de prompt

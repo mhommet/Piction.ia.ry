@@ -12,10 +12,10 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       title: 'Piction.ia.ry',
       // home: const Home(key: Key('home')),
-      home: Identification(key: const Key('id')),
+      home: Identification(key: Key('id')),
     );
   }
 }

@@ -1,11 +1,11 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'challenge_input_page.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wakelock/wakelock.dart';
 import 'teams_style.dart';
 
 class Teams extends StatefulWidget {
@@ -29,13 +29,12 @@ class _TeamsState extends State<Teams> {
   @override
   void initState() {
     super.initState();
-    Wakelock.enable();
     _startRefreshTimer();
     _fetchGameSessionData();
   }
 
   void _startRefreshTimer() {
-    _refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _fetchGameSessionData();
     });
   }
@@ -121,13 +120,12 @@ class _TeamsState extends State<Teams> {
       isCountdownActive = true;
       countdownSeconds = 10;
     });
-    _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         if (countdownSeconds > 0) {
           countdownSeconds--;
         } else {
           _countdownTimer?.cancel();
-          Wakelock.disable();
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -145,7 +143,6 @@ class _TeamsState extends State<Teams> {
   void dispose() {
     _refreshTimer?.cancel();
     _countdownTimer?.cancel();
-    Wakelock.disable();
     super.dispose();
   }
 
@@ -153,7 +150,7 @@ class _TeamsState extends State<Teams> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'TEAMS COMPOSITION',
           style: TeamsStyle.appBarTitleStyle,
         ),
@@ -171,7 +168,7 @@ class _TeamsState extends State<Teams> {
             children: <Widget>[
               TeamsStyle.spacing30,
               // Team Blue
-              Text(
+              const Text(
                 'Team Blue',
                 textAlign: TextAlign.center,
                 style: TeamsStyle.teamTitleBlue,
@@ -188,7 +185,7 @@ class _TeamsState extends State<Teams> {
               )),
               TeamsStyle.spacing30,
               // Team Red
-              Text(
+              const Text(
                 'Team Red',
                 textAlign: TextAlign.center,
                 style: TeamsStyle.teamTitleRed,
@@ -212,7 +209,7 @@ class _TeamsState extends State<Teams> {
                   textAlign: TextAlign.center,
                 )
               else
-                Text(
+                const Text(
                   'The game will start automatically when all players are ready',
                   style: TeamsStyle.infoTextStyle,
                 ),

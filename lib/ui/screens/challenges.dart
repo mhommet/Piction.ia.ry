@@ -153,11 +153,11 @@ class ChallengeCard extends StatelessWidget {
   final List<String> tags;
 
   const ChallengeCard({
-    Key? key,
+    super.key,
     required this.number,
     required this.title,
     required this.tags,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

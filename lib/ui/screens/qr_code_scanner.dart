@@ -82,10 +82,10 @@ class _QRCodeScannerPageState extends State<QRCodeScannerPage> {
               ),
             ),
           ),
-          Expanded(
+          const Expanded(
             flex: 1,
             child: Center(
-              child: const Text(
+              child: Text(
                 'Scan QR Code',
                 style: QRCodeScannerStyle.waitingTextStyle,
               ),
