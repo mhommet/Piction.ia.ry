@@ -77,8 +77,8 @@ class _TeamsState extends State<Teams> {
           });
         }
 
-        // Si chaque équipe a un joueur, arrêter le timer et démarrer le compte à rebours
-        if (teamBlue.length == 1 && teamRed.length == 1 && !isCountdownActive) {
+        // Si au moins une équipe a un joueur, arrêter le timer et démarrer le compte à rebours
+        if ((teamBlue.length >= 1 || teamRed.length >= 1) && !isCountdownActive) {
           _refreshTimer?.cancel();
           _startCountdown();
         }
@@ -208,8 +208,14 @@ class _TeamsState extends State<Teams> {
                   style: TeamsStyle.infoTextStyle,
                   textAlign: TextAlign.center,
                 )
-              else
+              else if (teamBlue.length >= 1 || teamRed.length >= 1)
                 const Text(
+                  'Waiting for more players to join...',
+                  style: TeamsStyle.infoTextStyle,
+                  textAlign: TextAlign.center,
+                )
+              else
+                Text(
                   'The game will start automatically when all players are ready',
                   style: TeamsStyle.infoTextStyle,
                 ),

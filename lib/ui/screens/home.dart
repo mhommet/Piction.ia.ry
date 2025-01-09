@@ -9,8 +9,7 @@ import 'qr_code_scanner.dart';
 class Home extends StatelessWidget {
   final String username;
 
-  const Home({required Key key, required this.username})
-      : super(key: key);
+  const Home({required Key key, required this.username}) : super(key: key);
 
   Future<void> _saveUsername() async {
     final prefs = await SharedPreferences.getInstance();
@@ -64,7 +63,6 @@ class Home extends StatelessWidget {
     final sessionUrl = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/$gameSessionId');
 
     try {
-      // Récupérer les informations de session pour déterminer l'équipe
       final sessionResponse = await http.get(
         sessionUrl,
         headers: {
@@ -77,14 +75,12 @@ class Home extends StatelessWidget {
         final sessionData = jsonDecode(sessionResponse.body);
         String color;
 
-        // Choisir l'équipe avec de la place
         if ((sessionData['blue_team'] as List).length < 2) {
           color = "blue";
         } else {
           color = "red";
         }
 
-        // Requête pour rejoindre la session avec la couleur choisie
         final joinUrl = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/$gameSessionId/join');
         final joinResponse = await http.post(
           joinUrl,
@@ -205,3 +201,4 @@ class Home extends StatelessWidget {
     );
   }
 }
+

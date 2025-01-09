@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class ChallengeInputPage extends StatefulWidget {
-  final int gameSessionId; // Recevoir l'ID de la session de jeu
+  final int gameSessionId;
 
   const ChallengeInputPage({super.key, required this.gameSessionId});
 
@@ -22,7 +22,14 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
   // Méthode pour envoyer les défis à la session
   Future<void> submitChallenges() async {
     final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/challenges');
-    final token = await getToken(); // Récupérer le token d'authentification
+    final token = await getToken();
+
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Token d'authentification non disponible.")),
+      );
+      return;
+    }
 
     for (var challenge in challenges) {
       final response = await http.post(
@@ -32,11 +39,11 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'first_word': challenge['first_word'],
-          'second_word': challenge['second_word'],
-          'third_word': challenge['third_word'],
-          'fourth_word': challenge['fourth_word'],
-          'forbidden_words': challenge['tags'],
+          'first_word': challenge['first_word'] ?? '',
+          'second_word': challenge['second_word'] ?? '',
+          'third_word': challenge['third_word'] ?? '',
+          'fourth_word': challenge['fourth_word'] ?? '',
+          'forbidden_words': challenge['tags'] ?? [],
         }),
       );
 
@@ -47,7 +54,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
       }
     }
 
-    // Naviguer vers la page de loading
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -56,7 +62,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
     );
   }
 
-  // Récupérer le token d'authentification
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('authToken');
@@ -178,19 +183,25 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                   const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: () {
-                      if (secondWord.isNotEmpty && fourthWord.isNotEmpty && tags.isNotEmpty) {
-                        String challengeTitle = '$firstWord $secondWord $thirdWord $fourthWord';
-                        setState(() {
-                          challenges.add({
-                            'first_word': firstWord.toLowerCase(),
-                            'second_word': secondWord,
-                            'third_word': thirdWord,
-                            'fourth_word': fourthWord,
-                            'tags': tags
-                          });
-                        });
-                        Navigator.of(context).pop();
+                      if (secondWord.isEmpty || fourthWord.isEmpty || tags.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Tous les champs doivent être remplis.')),
+                        );
+                        return;
                       }
+
+                      String challengeTitle = '$firstWord $secondWord $thirdWord $fourthWord';
+                      setState(() {
+                        challenges.add({
+                          'first_word': firstWord.toLowerCase(),
+                          'second_word': secondWord,
+                          'third_word': thirdWord,
+                          'fourth_word': fourthWord,
+                          'tags': tags,
+                          'title': challengeTitle,
+                        });
+                      });
+                      Navigator.of(context).pop();
                     },
                     child: const Text('Ajouter'),
                   ),
@@ -215,7 +226,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.send, color: Colors.blue),
-            onPressed: submitChallenges, // Envoyer les défis à la session
+            onPressed: submitChallenges,
           ),
         ],
         elevation: 0,
@@ -249,7 +260,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: submitChallenges, // Envoyer les défis
+                onPressed: submitChallenges,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 126, 255, 130),
                   padding: const EdgeInsets.symmetric(vertical: 16),

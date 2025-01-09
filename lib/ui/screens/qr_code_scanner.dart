@@ -1,10 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'qr_code_scanner_style.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'dart:convert';
 import 'teams.dart';
 
@@ -12,107 +9,11 @@ class QRCodeScannerPage extends StatefulWidget {
   const QRCodeScannerPage({super.key});
 
   @override
-  State<StatefulWidget> createState() => _QRCodeScannerPageState();
+  State<QRCodeScannerPage> createState() => _QRCodeScannerPageState();
 }
 
 class _QRCodeScannerPageState extends State<QRCodeScannerPage> {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? controller;
-  bool hasScanned = false; // Pour éviter de joindre plusieurs fois la session
-
-  @override
-  void initState() {
-    super.initState();
-    _requestCameraPermission(); // Demander la permission de la caméra
-  }
-
-  Future<void> _requestCameraPermission() async {
-    var status = await Permission.camera.status;
-    if (!status.isGranted) {
-      await Permission.camera.request();
-    }
-    if (await Permission.camera.isGranted) {
-      _initializeCamera();
-    } else {
-      print("Permission caméra refusée");
-    }
-  }
-
-  void _initializeCamera() {
-    setState(() {});
-  }
-
-  @override
-  void reassemble() {
-    super.reassemble();
-    if (controller != null) {
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        controller!.pauseCamera();
-      }
-      controller!.resumeCamera();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'QR Code Scanner',
-          style: QRCodeScannerStyle.appBarTitleStyle,
-        ),
-        backgroundColor: QRCodeScannerStyle.appBarBackgroundColor,
-        elevation: 0,
-        iconTheme: QRCodeScannerStyle.appBarIconTheme,
-      ),
-      backgroundColor: QRCodeScannerStyle.backgroundColor,
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            flex: 5,
-            child: QRView(
-              key: qrKey,
-              onQRViewCreated: _onQRViewCreated,
-              overlay: QrScannerOverlayShape(
-                borderColor: QRCodeScannerStyle.overlayBorderColor,
-                borderRadius: QRCodeScannerStyle.overlayBorderRadius,
-                borderLength: QRCodeScannerStyle.overlayBorderLength,
-                borderWidth: QRCodeScannerStyle.overlayBorderWidth,
-                cutOutSize: QRCodeScannerStyle.overlayCutOutSize,
-              ),
-            ),
-          ),
-          const Expanded(
-            flex: 1,
-            child: Center(
-              child: Text(
-                'Scan QR Code',
-                style: QRCodeScannerStyle.waitingTextStyle,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _onQRViewCreated(QRViewController controller) {
-    setState(() {
-      this.controller = controller;
-    });
-    controller.scannedDataStream.listen((scanData) async {
-      if (!hasScanned && scanData.code != null && int.tryParse(scanData.code!) != null) {
-        setState(() {
-          hasScanned = true;
-        });
-
-        controller.pauseCamera();
-
-        int gameSessionId = int.parse(scanData.code!);
-        await _getSessionAndJoin(context, gameSessionId);
-      }
-    });
-  }
+  bool hasScanned = false; // Empêche de scanner plusieurs fois
 
   Future<void> _getSessionAndJoin(BuildContext context, int gameSessionId) async {
     final prefs = await SharedPreferences.getInstance();
@@ -137,18 +38,13 @@ class _QRCodeScannerPageState extends State<QRCodeScannerPage> {
       if (response.statusCode == 200) {
         final sessionData = jsonDecode(response.body);
 
-        // Déterminer l'équipe avec de la place, en équilibrant les équipes
         String color;
-        if (sessionData['blue_team'].length < 2 && sessionData['red_team'].length == 1) {
-          color = "blue";
-        } else if (sessionData['red_team'].length < 2 && sessionData['blue_team'].length == 1) {
-          color = "red";
-        } else if (sessionData['blue_team'].length < 2) {
+        if (sessionData['blue_team'].length < 2) {
           color = "blue";
         } else if (sessionData['red_team'].length < 2) {
           color = "red";
         } else {
-          print("Les deux équipes sont déjà pleines");
+          print("Les équipes sont pleines.");
           return;
         }
 
@@ -186,13 +82,7 @@ class _QRCodeScannerPageState extends State<QRCodeScannerPage> {
         print('Joueur rejoint la session avec succès dans l\'équipe $color');
         _navigateToTeamsPage(context, gameSessionId);
       } else {
-        final responseBody = jsonDecode(response.body);
-        if (responseBody["error"] == "Player already in game session") {
-          print('Le joueur est déjà dans la session.');
-          _navigateToTeamsPage(context, gameSessionId);
-        } else {
-          print('Erreur lors du join de la session: ${response.body}');
-        }
+        print('Erreur lors du join de la session: ${response.body}');
       }
     } catch (e) {
       print('Erreur: $e');
@@ -214,10 +104,31 @@ class _QRCodeScannerPageState extends State<QRCodeScannerPage> {
     );
   }
 
-
   @override
-  void dispose() {
-    controller?.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('QR Code Scanner'),
+      ),
+      body: MobileScanner(
+        onDetect: (capture) async {
+          final List<Barcode> barcodes = capture.barcodes;
+          final Barcode? barcode = barcodes.first;
+          if (!hasScanned && barcode?.rawValue != null) {
+            setState(() {
+              hasScanned = true;
+            });
+
+            int gameSessionId = int.tryParse(barcode!.rawValue!) ?? -1;
+            if (gameSessionId != -1) {
+              await _getSessionAndJoin(context, gameSessionId);
+            } else {
+              print("QR code invalide");
+            }
+          }
+        },
+      ),
+    );
   }
 }
+
