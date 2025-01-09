@@ -16,52 +16,77 @@ class ChallengeInputPage extends StatefulWidget {
 
 class _ChallengeInputPageState extends State<ChallengeInputPage> {
   List<Map<String, dynamic>> challenges = [];
-  String firstWord = 'Un';
+  String firstWord = 'une';
   String thirdWord = 'sur';
 
   // Méthode pour envoyer les défis à la session
   Future<void> submitChallenges() async {
-    final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/challenges');
+    final url = Uri.parse(
+        'http://localhost:8000/api/game_sessions/${widget.gameSessionId}/challenges');
     final token = await getToken();
 
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Token d'authentification non disponible.")),
+        const SnackBar(
+            content: Text("Token d'authentification non disponible.")),
       );
       return;
     }
 
-    for (var challenge in challenges) {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'first_word': challenge['first_word'] ?? '',
-          'second_word': challenge['second_word'] ?? '',
-          'third_word': challenge['third_word'] ?? '',
-          'fourth_word': challenge['fourth_word'] ?? '',
-          'forbidden_words': challenge['tags'] ?? [],
-        }),
-      );
+    bool allChallengesAdded = true;
 
-      if (response.statusCode == 200) {
-        print("Défi ajouté avec succès");
-      } else {
-        print("Erreur lors de l'ajout du défi: ${response.body}");
+    for (var challenge in challenges) {
+      try {
+        // Log de la requête
+        print("Request URI: $url");
+        print("Request Body: ${jsonEncode(challenge)}");
+
+        final response = await http.post(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode(challenge),
+        );
+
+        // Vérifier si la requête a échoué
+        if (response.statusCode == 200) {
+          print("Défi ajouté avec succès");
+        } else {
+          allChallengesAdded = false;
+          print("Status Code: ${response.statusCode}");
+          print("Response Body: ${response.body}");
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Erreur API : ${response.statusCode}\n${response.body}',
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        allChallengesAdded = false;
+        print("Erreur lors de l'envoi de la requête : $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur de connexion : $e')),
+        );
       }
     }
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Loading(challenges: challenges),
-      ),
-    );
+    // Redirection uniquement si tous les défis ont été ajoutés
+    if (allChallengesAdded) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Loading(challenges: challenges),
+        ),
+      );
+    }
   }
 
+  // Récupérer le token d'authentification
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('authToken');
@@ -69,7 +94,8 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
 
   void _openAddChallengeModal(BuildContext context) {
     String secondWord = '';
-    String fourthWord = '';
+    String fourthWord = 'un';
+    String fifthWord = '';
     List<String> tags = [];
     String currentTag = '';
 
@@ -85,48 +111,58 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Sélection du premier mot (une/un)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: firstWord == 'Un' ? Colors.blue : Colors.grey[300],
+                          backgroundColor: firstWord == 'une'
+                              ? Colors.blue
+                              : Colors.grey[300],
                         ),
                         onPressed: () {
                           setModalState(() {
-                            firstWord = 'Un';
-                          });
-                        },
-                        child: const Text('Un'),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: firstWord == 'Une' ? Colors.blue : Colors.grey[300],
-                        ),
-                        onPressed: () {
-                          setModalState(() {
-                            firstWord = 'Une';
+                            firstWord = 'une';
                           });
                         },
                         child: const Text('Une'),
                       ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: firstWord == 'un'
+                              ? Colors.blue
+                              : Colors.grey[300],
+                        ),
+                        onPressed: () {
+                          setModalState(() {
+                            firstWord = 'un';
+                          });
+                        },
+                        child: const Text('Un'),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 10),
+                  // Champ pour le deuxième mot
                   TextField(
-                    decoration: const InputDecoration(hintText: 'Mot 1'),
+                    decoration:
+                        const InputDecoration(hintText: 'Mot 1 (ex. poule)'),
                     onChanged: (value) {
                       secondWord = value;
                     },
                   ),
                   const SizedBox(height: 8),
+                  // Sélection du troisième mot (sur/dans)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: thirdWord == 'sur' ? Colors.blue : Colors.grey[300],
+                          backgroundColor: thirdWord == 'sur'
+                              ? Colors.blue
+                              : Colors.grey[300],
                         ),
                         onPressed: () {
                           setModalState(() {
@@ -138,7 +174,9 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                       const SizedBox(width: 10),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: thirdWord == 'dans' ? Colors.blue : Colors.grey[300],
+                          backgroundColor: thirdWord == 'dans'
+                              ? Colors.blue
+                              : Colors.grey[300],
                         ),
                         onPressed: () {
                           setModalState(() {
@@ -150,15 +188,28 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                     ],
                   ),
                   const SizedBox(height: 10),
+                  // Champ pour le quatrième mot
                   TextField(
-                    decoration: const InputDecoration(hintText: 'Mot 2'),
+                    decoration:
+                        const InputDecoration(hintText: 'Mot 2 (ex. un)'),
                     onChanged: (value) {
                       fourthWord = value;
                     },
                   ),
                   const SizedBox(height: 8),
+                  // Champ pour le cinquième mot
                   TextField(
-                    decoration: const InputDecoration(labelText: 'Tag'),
+                    decoration:
+                        const InputDecoration(hintText: 'Mot 3 (ex. mur)'),
+                    onChanged: (value) {
+                      fifthWord = value;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  // Ajout de tags (mots interdits)
+                  TextField(
+                    decoration:
+                        const InputDecoration(labelText: 'Mot interdit'),
                     onChanged: (value) {
                       currentTag = value;
                     },
@@ -173,37 +224,43 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                         });
                       }
                     },
-                    child: const Text('Ajouter Tag'),
+                    child: const Text('Ajouter Mot Interdit'),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
-                    children: tags.map((tag) => Chip(label: Text(tag))).toList(),
+                    children:
+                        tags.map((tag) => Chip(label: Text(tag))).toList(),
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: () {
-                      if (secondWord.isEmpty || fourthWord.isEmpty || tags.isEmpty) {
+                      if (secondWord.isEmpty ||
+                          fourthWord.isEmpty ||
+                          fifthWord.isEmpty ||
+                          tags.length != 3) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Tous les champs doivent être remplis.')),
+                          const SnackBar(
+                              content: Text(
+                                  'Veuillez remplir tous les champs et ajouter 3 mots interdits.')),
                         );
                         return;
                       }
 
-                      String challengeTitle = '$firstWord $secondWord $thirdWord $fourthWord';
                       setState(() {
                         challenges.add({
-                          'first_word': firstWord.toLowerCase(),
+                          'first_word': firstWord,
                           'second_word': secondWord,
                           'third_word': thirdWord,
                           'fourth_word': fourthWord,
-                          'tags': tags,
-                          'title': challengeTitle,
+                          'fifth_word': fifthWord,
+                          'forbidden_words': tags,
                         });
                       });
-                      Navigator.of(context).pop();
+
+                      Navigator.of(context).pop(); // Fermer le modal
                     },
-                    child: const Text('Ajouter'),
+                    child: const Text('Ajouter Défi'),
                   ),
                 ],
               ),
@@ -252,7 +309,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                 itemCount: challenges.length,
                 itemBuilder: (context, index) {
                   final challenge = challenges[index];
-                  return _buildChallengeCard(index, challenge['title'], challenge['tags']);
+                  return _buildChallengeCard(index, challenge);
                 },
               ),
             ),
@@ -266,7 +323,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text(
-                  'Valider et continuer',
+                  'Valider et envoyer',
                   style: TextStyle(color: Colors.white, fontSize: 18),
                 ),
               ),
@@ -277,7 +334,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
     );
   }
 
-  Widget _buildChallengeCard(int index, String title, List<String> tags) {
+  Widget _buildChallengeCard(int index, Map<String, dynamic> challenge) {
     return Card(
       margin: ChallengeInputStyle.cardMargin,
       shape: ChallengeInputStyle.cardShape,
@@ -287,17 +344,23 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: ChallengeInputStyle.challengeTitleStyle),
+            Text(
+              '${challenge['first_word']} ${challenge['second_word']} ${challenge['third_word']} ${challenge['fourth_word']} ${challenge['fifth_word']}',
+              style: ChallengeInputStyle.challengeTitleStyle,
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
-              children: tags.map((tag) => _ChallengeTag(label: tag)).toList(),
+              children: challenge['forbidden_words']
+                  .map<Widget>((tag) => Chip(label: Text(tag)))
+                  .toList(),
             ),
             const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerRight,
               child: IconButton(
-                icon: const Icon(Icons.delete, color: ChallengeInputStyle.iconDeleteColor),
+                icon: const Icon(Icons.delete,
+                    color: ChallengeInputStyle.iconDeleteColor),
                 onPressed: () {
                   setState(() {
                     challenges.removeAt(index);
@@ -308,21 +371,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ChallengeTag extends StatelessWidget {
-  final String label;
-
-  const _ChallengeTag({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: ChallengeInputStyle.tagDecoration,
-      child: Text(label, style: ChallengeInputStyle.tagTextStyle),
     );
   }
 }

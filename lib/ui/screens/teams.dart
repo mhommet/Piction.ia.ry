@@ -80,6 +80,7 @@ class _TeamsState extends State<Teams> {
         // Si au moins une équipe a un joueur, arrêter le timer et démarrer le compte à rebours
         if ((teamBlue.length >= 1 || teamRed.length >= 1) && !isCountdownActive) {
           _refreshTimer?.cancel();
+          _startGameSession();
           _startCountdown();
         }
       } else {
@@ -112,6 +113,41 @@ class _TeamsState extends State<Teams> {
           print('Erreur: $e');
         }
       }
+    }
+  }
+
+    Future<void> _startGameSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Token non disponible.")),
+      );
+      return;
+    }
+
+    print("Démarrage de la session...");
+
+    final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/start');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print("Session démarrée avec succès.");
+        _startCountdown();
+      } else {
+        print('Erreur lors du démarrage de la session: ${response.body}');
+      }
+    } catch (e) {
+      print('Erreur: $e');
     }
   }
 
