@@ -22,7 +22,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
   // Méthode pour envoyer les défis à la session
   Future<void> submitChallenges() async {
     final url = Uri.parse(
-        'http://localhost:8000/api/game_sessions/${widget.gameSessionId}/challenges');
+        'https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/challenges');
     final token = await getToken();
 
     if (token == null) {
@@ -77,16 +77,52 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
 
     // Redirection uniquement si tous les défis ont été ajoutés
     if (allChallengesAdded) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => Loading(challenges: challenges),
-        ),
-      );
+      await _startChallengeMode();
     }
   }
 
-  // Récupérer le token d'authentification
+  // Méthode pour démarrer le mode challenge
+  Future<void> _startChallengeMode() async {
+    final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/start');
+    final token = await getToken();
+
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Token d'authentification non disponible.")),
+      );
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print("Mode challenge démarré avec succès");
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Loading(challenges: challenges),
+          ),
+        );
+      } else {
+        print("Erreur lors du démarrage du mode challenge: ${response.body}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur API : ${response.statusCode}\n${response.body}')),
+        );
+      }
+    } catch (e) {
+      print("Erreur lors de l'envoi de la requête : $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur de connexion : $e')),
+      );
+    }
+  }
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('authToken');

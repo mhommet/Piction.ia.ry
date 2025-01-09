@@ -1,12 +1,11 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'challenge_input_page.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'teams_style.dart';
+import 'challenge_input_page.dart';
 
 class Teams extends StatefulWidget {
   final String username;
@@ -48,6 +47,9 @@ class _TeamsState extends State<Teams> {
       return;
     }
 
+    // Print session id
+    print('Game session id: ${widget.gameSessionId}');
+
     final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}');
 
     try {
@@ -62,25 +64,19 @@ class _TeamsState extends State<Teams> {
       if (response.statusCode == 200) {
         final sessionData = jsonDecode(response.body);
 
-        // Préparer les nouvelles listes pour comparaison
         List<String> newTeamBlue = [];
         List<String> newTeamRed = [];
 
         await _fetchPlayerNames(sessionData['blue_team'], newTeamBlue, token);
         await _fetchPlayerNames(sessionData['red_team'], newTeamRed, token);
 
-        // Mettre à jour l'état seulement si les listes ont changé
-        if (!listEquals(newTeamBlue, teamBlue) || !listEquals(newTeamRed, teamRed)) {
-          setState(() {
-            teamBlue = newTeamBlue;
-            teamRed = newTeamRed;
-          });
-        }
+        setState(() {
+          teamBlue = newTeamBlue;
+          teamRed = newTeamRed;
+        });
 
-        // Si au moins une équipe a un joueur, arrêter le timer et démarrer le compte à rebours
-        if ((teamBlue.length >= 1 || teamRed.length >= 1) && !isCountdownActive) {
-          _refreshTimer?.cancel();
-          _startGameSession();
+        // Démarrer le compte à rebours uniquement si les deux équipes ont au moins un joueur
+        if (teamBlue.isNotEmpty && teamRed.isNotEmpty && !isCountdownActive) {
           _startCountdown();
         }
       } else {
@@ -92,6 +88,7 @@ class _TeamsState extends State<Teams> {
   }
 
   Future<void> _fetchPlayerNames(List<dynamic> playerIds, List<String> team, String token) async {
+    team.clear(); // Nettoie les anciens joueurs avant d'ajouter les nouveaux
     for (var playerId in playerIds) {
       if (playerId != null) {
         final playerUrl = Uri.parse('https://pictioniary.wevox.cloud/api/players/$playerId');
@@ -113,41 +110,6 @@ class _TeamsState extends State<Teams> {
           print('Erreur: $e');
         }
       }
-    }
-  }
-
-    Future<void> _startGameSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken');
-
-    if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Token non disponible.")),
-      );
-      return;
-    }
-
-    print("Démarrage de la session...");
-
-    final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/start');
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        print("Session démarrée avec succès.");
-        _startCountdown();
-      } else {
-        print('Erreur lors du démarrage de la session: ${response.body}');
-      }
-    } catch (e) {
-      print('Erreur: $e');
     }
   }
 
@@ -203,7 +165,6 @@ class _TeamsState extends State<Teams> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               TeamsStyle.spacing30,
-              // Team Blue
               const Text(
                 'Team Blue',
                 textAlign: TextAlign.center,
@@ -211,16 +172,15 @@ class _TeamsState extends State<Teams> {
               ),
               TeamsStyle.spacing20,
               ...teamBlue.map((player) => ElevatedButton(
-                onPressed: () {},
-                style: TeamsStyle.teamButtonBlue,
-                child: Text(
-                  player,
-                  style: TeamsStyle.buttonTextStyle,
-                  textAlign: TextAlign.center,
-                ),
-              )),
+                    onPressed: () {},
+                    style: TeamsStyle.teamButtonBlue,
+                    child: Text(
+                      player,
+                      style: TeamsStyle.buttonTextStyle,
+                      textAlign: TextAlign.center,
+                    ),
+                  )),
               TeamsStyle.spacing30,
-              // Team Red
               const Text(
                 'Team Red',
                 textAlign: TextAlign.center,
@@ -228,35 +188,28 @@ class _TeamsState extends State<Teams> {
               ),
               TeamsStyle.spacing20,
               ...teamRed.map((player) => ElevatedButton(
-                onPressed: () {},
-                style: TeamsStyle.teamButtonRed,
-                child: Text(
-                  player,
-                  style: TeamsStyle.buttonTextStyle,
-                  textAlign: TextAlign.center,
-                ),
-              )),
+                    onPressed: () {},
+                    style: TeamsStyle.teamButtonRed,
+                    child: Text(
+                      player,
+                      style: TeamsStyle.buttonTextStyle,
+                      textAlign: TextAlign.center,
+                    ),
+                  )),
               TeamsStyle.spacing30,
-              // Info sur le démarrage automatique ou le compte à rebours
               if (isCountdownActive)
                 Text(
                   'La partie commence dans $countdownSeconds secondes...',
                   style: TeamsStyle.infoTextStyle,
                   textAlign: TextAlign.center,
                 )
-              else if (teamBlue.length >= 1 || teamRed.length >= 1)
+              else
                 const Text(
-                  'Waiting for more players to join...',
+                  'Les deux équipes doivent avoir au moins un joueur pour commencer.',
                   style: TeamsStyle.infoTextStyle,
                   textAlign: TextAlign.center,
-                )
-              else
-                Text(
-                  'The game will start automatically when all players are ready',
-                  style: TeamsStyle.infoTextStyle,
                 ),
               TeamsStyle.spacing30,
-              // QR Code pour rejoindre la session
               Center(
                 child: QrImageView(
                   data: widget.gameSessionId.toString(),
@@ -271,3 +224,4 @@ class _TeamsState extends State<Teams> {
     );
   }
 }
+
