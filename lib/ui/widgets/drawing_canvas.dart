@@ -57,7 +57,7 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
         },
         child: CustomPaint(
           painter: _DrawingPainter(points: points),
-          child: Container(
+          child: const SizedBox(
             width: double.infinity,
             height: 300,
           ),
@@ -75,13 +75,11 @@ class _DrawingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (int i = 0; i < points.length - 1; i++) {
-      if (points[i + 1] != null) {
-        canvas.drawLine(
-          points[i].point,
-          points[i + 1].point,
-          points[i].paint,
-        );
-      }
+      canvas.drawLine(
+        points[i].point,
+        points[i + 1].point,
+        points[i].paint,
+      );
     }
   }
 

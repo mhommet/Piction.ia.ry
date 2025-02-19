@@ -6,14 +6,15 @@ import 'drawing_page_style.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/drawing_canvas.dart';
+import 'guess_page.dart';
 
 class DrawingPage extends StatefulWidget {
   final int gameSessionId;
   
   const DrawingPage({
-    required Key key, 
+    super.key,
     required this.gameSessionId
-  }) : super(key: key);
+  });
 
   @override
   State<DrawingPage> createState() => _DrawingPageState();
@@ -36,7 +37,6 @@ class _DrawingPageState extends State<DrawingPage> {
   void _startRefreshTimer() {
     // Vérifier l'image toutes les 5 secondes
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      _fetchDrawing();
     });
   }
 
@@ -44,71 +44,6 @@ class _DrawingPageState extends State<DrawingPage> {
   void dispose() {
     _refreshTimer?.cancel();
     super.dispose();
-  }
-
-  Future<void> _fetchDrawing() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken');
-
-    if (token == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Token non disponible')),
-        );
-      }
-      return;
-    }
-
-    if (!mounted) return;
-
-    try {
-      final url = Uri.parse(
-          'https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/challenges/3/draw');
-
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({'prompt': "Vive le vent d'hivers"}),
-      );
-
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
-        final imageBase64 = jsonResponse['image'];
-
-        if (imageBase64 != null) {
-          setState(() {
-            imageBytes = base64Decode(imageBase64);
-            isLoading = false;
-          });
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Image non disponible dans la réponse')),
-            );
-          }
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur API : ${response.statusCode}')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
-      }
-      setState(() {
-        isLoading = false;
-      });
-    }
   }
 
   Future<void> _loadChallenges() async {
@@ -124,8 +59,6 @@ class _DrawingPageState extends State<DrawingPage> {
       return;
     }
 
-    if (!mounted) return;
-
     try {
       final url = Uri.parse(
           'https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/myChallenges');
@@ -137,30 +70,25 @@ class _DrawingPageState extends State<DrawingPage> {
         },
       );
 
-      if (!mounted) return;
-
       if (response.statusCode == 200) {
         final List<dynamic> challenges = jsonDecode(response.body);
         
-        if (challenges.isNotEmpty) {
-          setState(() {
-            myChallenges = List<Map<String, dynamic>>.from(challenges);
+        setState(() {
+          myChallenges = List<Map<String, dynamic>>.from(challenges);
+          if (myChallenges.isNotEmpty) {
             currentDrawing = myChallenges[0];
-            isLoading = false;
-          });
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Aucun défi disponible')),
-            );
           }
-        }
+          isLoading = false;
+        });
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur API : ${response.statusCode}')),
+            SnackBar(content: Text('Erreur API : ${response.statusCode} - ${response.body}')),
           );
         }
+        setState(() {
+          isLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -236,6 +164,67 @@ class _DrawingPageState extends State<DrawingPage> {
     }
   }
 
+  Future<void> _submitDrawing() async {
+    if (currentDrawing == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+    
+    if (token == null || !mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Token non disponible')),
+      );
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/challenges/${currentDrawing!['id']}/draw'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'prompt': '${currentDrawing!['first_word']} ${currentDrawing!['second_word']} ${currentDrawing!['third_word']} ${currentDrawing!['fourth_word']} ${currentDrawing!['fifth_word']}'
+        }),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const GuessPage(),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur lors de l\'envoi du dessin')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: $e')),
+      );
+    }
+  }
+
+  List<String> parseForbiddenWords(dynamic forbiddenWords) {
+    if (forbiddenWords is String) {
+      try {
+        final List<dynamic> parsed = jsonDecode(forbiddenWords);
+        return parsed.map((word) => word.toString()).toList();
+      } catch (e) {
+        return [];  // Retour silencieux en cas d'erreur
+      }
+    } else if (forbiddenWords is List) {
+      return forbiddenWords.map((word) => word.toString()).toList();
+    }
+    return [];
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -260,6 +249,10 @@ class _DrawingPageState extends State<DrawingPage> {
             icon: const Icon(Icons.refresh),
             onPressed: _loadChallenges,
           ),
+          IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: _submitDrawing,
+          ),
         ],
       ),
       body: Padding(
@@ -268,27 +261,25 @@ class _DrawingPageState extends State<DrawingPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (currentDrawing != null) ...[
-              Text(
+              const Text(
                 'Défi à dessiner:',
                 style: DrawingPageStyle.titleStyle,
               ),
               const SizedBox(height: 8),
               Text(
-                '${currentDrawing!['challenge']}',
+                '${currentDrawing!['first_word']} ${currentDrawing!['second_word']} ${currentDrawing!['third_word']} ${currentDrawing!['fourth_word']} ${currentDrawing!['fifth_word']}',
                 style: DrawingPageStyle.challengeTextStyle,
               ),
-              if (currentDrawing!['forbidden_words'] != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Mots interdits:',
-                  style: DrawingPageStyle.titleStyle,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  currentDrawing!['forbidden_words'].join(', '),
-                  style: DrawingPageStyle.forbiddenWordsStyle,
-                ),
-              ],
+              const SizedBox(height: 8),
+              const Text(
+                'Mots interdits:',
+                style: DrawingPageStyle.titleStyle,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                parseForbiddenWords(currentDrawing!['forbidden_words']).join(', '),
+                style: DrawingPageStyle.forbiddenWordsStyle,
+              ),
               const SizedBox(height: 16),
               const DrawingCanvas(),
               const SizedBox(height: 16),
@@ -311,7 +302,7 @@ class _DrawingPageState extends State<DrawingPage> {
                         style: DrawingPageStyle.challengeTextStyle,
                       ),
                       subtitle: Text(
-                        'Mots interdits: ${(challenge['forbidden_words'] as List).join(', ')}',
+                        'Mots interdits: ${parseForbiddenWords(challenge['forbidden_words']).join(', ')}',
                         style: DrawingPageStyle.forbiddenWordsStyle,
                       ),
                       onTap: () => _loadDrawing(challenge['id']),

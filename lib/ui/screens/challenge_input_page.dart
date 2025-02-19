@@ -5,6 +5,7 @@ import 'loading.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
+import 'drawing_page.dart';
 
 class ChallengeInputPage extends StatefulWidget {
   final int gameSessionId;
@@ -48,7 +49,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
         );
       } catch (e) {
         // Ignorer les erreurs car les défis sont probablement déjà envoyés
-        print('Info: Défi probablement déjà envoyé');
       }
     }
 
@@ -84,13 +84,10 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('authToken');
-    if (token != null) {
-      print('Token utilisé: $token');  // Debug
-    }
     return token;
   }
 
-  void _openAddChallengeModal(BuildContext context) {
+  void _openAddChallengeModal(BuildContext modalContext) {
     String secondWord = '';
     String fourthWord = 'un';
     String fifthWord = '';
@@ -98,7 +95,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
     String currentTag = '';
 
     showModalBottomSheet(
-      context: context,
+      context: modalContext,
       isScrollControlled: true,
       backgroundColor: Colors.white,
       builder: (BuildContext context) {
@@ -233,13 +230,15 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                           tags.length != 3) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                              content: Text(
-                                  'Veuillez remplir tous les champs et ajouter 3 mots interdits.')),
+                            content: Text('Veuillez remplir tous les champs et ajouter 3 mots interdits.'),
+                          ),
                         );
                         return;
                       }
 
-                      // Créer le défi
+                      // Capture les références avant les opérations asynchrones
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      final navigator = Navigator.of(context);
                       final challenge = {
                         'first_word': firstWord,
                         'second_word': secondWord,
@@ -249,11 +248,9 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                         'forbidden_words': tags,
                       };
 
-                      // Envoyer le défi à l'API
                       final token = await getToken();
-                      if (token == null) {
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
+                      if (token == null || !mounted) {
+                        scaffoldMessenger.showSnackBar(
                           const SnackBar(content: Text("Token d'authentification non disponible")),
                         );
                         return;
@@ -271,20 +268,36 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
 
                         if (!mounted) return;
 
-                        if (response.statusCode == 200) {
-                          // Mettre à jour la liste locale
+                        if (response.statusCode == 200 || response.statusCode == 201) {
                           setState(() {
                             challenges.add(challenge);
                           });
-                          Navigator.of(context).pop();
+                          navigator.pop();
+
+                          if (challenges.length >= 3) {
+                            navigator.pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => DrawingPage(
+                                  gameSessionId: widget.gameSessionId,
+                                ),
+                              ),
+                            );
+                          } else {
+                            scaffoldMessenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Défi ajouté ! Il reste ${3 - challenges.length} défi(s) à ajouter.'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Erreur lors de l\'ajout du défi: ${response.body}')),
+                          scaffoldMessenger.showSnackBar(
+                            const SnackBar(content: Text('Erreur lors de l\'ajout du défi')),
                           );
                         }
                       } catch (e) {
                         if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        scaffoldMessenger.showSnackBar(
                           SnackBar(content: Text('Erreur de connexion: $e')),
                         );
                       }
