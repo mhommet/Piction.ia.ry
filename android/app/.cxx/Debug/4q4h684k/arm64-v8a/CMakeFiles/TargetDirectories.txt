@@ -1,0 +1,2 @@
+C:/Users/milan/Workspace/Piction.ia.ry/android/app/.cxx/Debug/4q4h684k/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/milan/Workspace/Piction.ia.ry/android/app/.cxx/Debug/4q4h684k/arm64-v8a/CMakeFiles/rebuild_cache.dir

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'challenge_input_style.dart';
-import 'loading.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
@@ -20,6 +19,34 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
   List<Map<String, dynamic>> challenges = [];  // Liste locale des défis
   String firstWord = 'une';
   String thirdWord = 'sur';
+
+  Future<bool> _isDrawingPhase() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+    
+    if (token == null) return false;
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/status'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final status = jsonDecode(response.body)['status'];
+        return status == 'drawing';
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de la vérification du statut: $e')),
+        );
+      }
+    }
+    return false;
+  }
 
   Future<void> submitChallenges() async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -63,20 +90,28 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
       );
 
       if (!mounted) return;
+
+      // Vérifier si on est bien passé en phase de dessin
+      final isDrawing = await _isDrawingPhase();
+      if (!isDrawing) {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(content: Text('Attendez que tous les joueurs aient soumis leurs défis')),
+        );
+        return;
+      }
       
       // Passer à la page de dessin
       navigator.pushReplacement(
         MaterialPageRoute(
-          builder: (context) => Loading(challenges: challenges),
+          builder: (context) => DrawingPage(
+            gameSessionId: widget.gameSessionId,
+          ),
         ),
       );
     } catch (e) {
-      // Ignorer l'erreur car on est probablement déjà en mode drawing
       if (!mounted) return;
-      navigator.pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => Loading(challenges: challenges),
-        ),
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Erreur: $e')),
       );
     }
   }
@@ -274,22 +309,12 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                           });
                           navigator.pop();
 
-                          if (challenges.length >= 3) {
-                            navigator.pushReplacement(
-                              MaterialPageRoute(
-                                builder: (context) => DrawingPage(
-                                  gameSessionId: widget.gameSessionId,
-                                ),
-                              ),
-                            );
-                          } else {
-                            scaffoldMessenger.showSnackBar(
-                              SnackBar(
-                                content: Text('Défi ajouté ! Il reste ${3 - challenges.length} défi(s) à ajouter.'),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          }
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(
+                              content: Text('Défi ajouté ! Il reste ${3 - challenges.length} défi(s) à ajouter.'),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
                         } else {
                           scaffoldMessenger.showSnackBar(
                             const SnackBar(content: Text('Erreur lors de l\'ajout du défi')),
