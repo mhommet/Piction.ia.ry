@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert'; // For jsonEncode
-import 'package:http/http.dart' as http; // For making HTTP requests
 import 'challenge_screen_style.dart';
 
 class ChallengeScreen extends StatefulWidget {
@@ -9,7 +7,7 @@ class ChallengeScreen extends StatefulWidget {
   const ChallengeScreen({super.key, required this.challenges});
 
   @override
-  _ChallengeScreenState createState() => _ChallengeScreenState();
+  State<ChallengeScreen> createState() => _ChallengeScreenState();
 }
 
 class _ChallengeScreenState extends State<ChallengeScreen> {
@@ -19,44 +17,41 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
 
   // Méthode pour générer l'image via l'API de Stable Diffusion
   Future<void> generateImage() async {
-    setState(() {
-      isLoading = true; // Afficher un loader pendant la génération
-    });
+    if (!mounted) return;
 
-    const apiUrl = 'https://api.stablediffusion.com/generate'; // Exemples d'API
-    final prompt = widget.challenges.isNotEmpty
-        ? widget.challenges[0]['title']
-        : 'Une poule sur un mur'; // Exemple de prompt
+    setState(() {
+      isLoading = true;
+    });
 
     try {
-      print('Envoi de la requête à l\'API avec le prompt : $prompt');
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'prompt': prompt, // Prompt basé sur le défi actuel
-        }),
+      final prompt = widget.challenges.isNotEmpty
+          ? '${widget.challenges[0]['first_word']} ${widget.challenges[0]['second_word']} ${widget.challenges[0]['third_word']} ${widget.challenges[0]['fourth_word']} ${widget.challenges[0]['fifth_word']}'
+          : 'Une poule sur un mur';
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Génération de l\'image pour: $prompt')),
       );
 
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
-        final imageUrl = jsonResponse[
-            'image_url']; // Suppose que l'API retourne une URL d'image
-        print('URL de l\'image reçue : $imageUrl');
+      // Simuler l'appel API pour l'instant
+      await Future.delayed(const Duration(seconds: 2));
 
-        setState(() {
-          generatedImageUrl = imageUrl;
-        });
-      } else {
-        print('Erreur lors de la génération de l\'image : ${response.body}');
-      }
+      if (!mounted) return;
+
+      setState(() {
+        isLoading = false;
+      });
     } catch (e) {
-      print('Erreur lors de l\'appel API : $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e')),
+        );
+      }
+      setState(() {
+        isLoading = false;
+      });
     }
-
-    setState(() {
-      isLoading = false; // Arrêter le loader après la génération
-    });
   }
 
   @override

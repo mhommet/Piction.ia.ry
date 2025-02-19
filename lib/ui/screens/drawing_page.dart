@@ -3,9 +3,16 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:typed_data';
 import 'drawing_page_style.dart';
+import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DrawingPage extends StatefulWidget {
-  const DrawingPage({required Key key}) : super(key: key);
+  final int gameSessionId;
+  
+  const DrawingPage({
+    required Key key, 
+    required this.gameSessionId
+  }) : super(key: key);
 
   @override
   State<DrawingPage> createState() => _DrawingPageState();
@@ -14,21 +21,46 @@ class DrawingPage extends StatefulWidget {
 class _DrawingPageState extends State<DrawingPage> {
   Uint8List? imageBytes; // Stocker les données de l'image
   bool isLoading = true; // Indicateur de chargement
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
-    _fetchDrawing(); // Lancer la requête API au démarrage
+    _startRefreshTimer();
+  }
+
+  void _startRefreshTimer() {
+    // Vérifier l'image toutes les 5 secondes
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _fetchDrawing();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchDrawing() async {
-    final String token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTAsIm5hbWUiOiJBbWFuZGluZSJ9.Rh7psY5manOCnWqvcdOV6o8EWohCzwVME7z2KFFjPfU";
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
 
-    print('Récupération du dessin en cours...');
-    final url = Uri.parse(
-        'http://localhost:8000/api/game_sessions/3/challenges/3/draw');
+    if (token == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Token non disponible')),
+        );
+      }
+      return;
+    }
+
+    if (!mounted) return;
 
     try {
+      final url = Uri.parse(
+          'https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/challenges/3/draw');
+
       final response = await http.post(
         url,
         headers: {
@@ -38,23 +70,37 @@ class _DrawingPageState extends State<DrawingPage> {
         body: jsonEncode({'prompt': "Vive le vent d'hivers"}),
       );
 
+      if (!mounted) return;
+
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
-        final imageBase64 = jsonResponse['image']; // Récupérer l'image en base64
+        final imageBase64 = jsonResponse['image'];
 
         if (imageBase64 != null) {
           setState(() {
-            imageBytes = base64Decode(imageBase64); // Décoder en Uint8List
+            imageBytes = base64Decode(imageBase64);
             isLoading = false;
           });
         } else {
-          throw Exception('Image non disponible dans la réponse');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Image non disponible dans la réponse')),
+            );
+          }
         }
       } else {
-        throw Exception('Erreur API : ${response.statusCode} - ${response.body}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur API : ${response.statusCode}')),
+          );
+        }
       }
     } catch (e) {
-      print('Erreur lors de la récupération du dessin : $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e')),
+        );
+      }
       setState(() {
         isLoading = false;
       });
@@ -104,7 +150,7 @@ class _DrawingPageState extends State<DrawingPage> {
 
 void main() {
   runApp(const MaterialApp(
-    home: DrawingPage(key: Key('drawingPage')),
+    home: DrawingPage(key: Key('drawingPage'), gameSessionId: 3),
   ));
 }
 

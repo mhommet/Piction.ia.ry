@@ -111,6 +111,26 @@ add_challenges() {
     echo "Ajout des challenges terminé."
 }
 
+start_game() {
+    local token=$1
+    echo "Lancement de la partie..."
+    
+    local start_response=$(curl -s -X POST "$BASE_URL/game_sessions/$GAME_SESSION_ID/start" \
+      -H "Authorization: Bearer $token" \
+      -H "Content-Type: application/json")
+    
+    echo "Réponse au lancement : $start_response"
+    
+    if [[ $(echo $start_response | jq -r '.status // empty') == "drawing" ]]; then
+        echo "La partie a été lancée avec succès"
+        return 0
+    else
+        echo "Erreur lors du lancement de la partie. Réponse : $start_response"
+        return 1
+    fi
+}
+
+# Séquence principale
 if [ -z "$GAME_SESSION_ID" ]; then
     echo "Erreur: Veuillez fournir l'ID de la session de jeu"
     echo "Usage: ./join_session.sh <game_session_id>"
@@ -155,9 +175,16 @@ join_player "blue"
 echo "Ajout du troisième joueur (équipe rouge)..."
 join_player "red"
 
-# Ajouter les challenges en utilisant le token du premier joueur
-echo "Ajout des challenges avec le joueur $FIRST_PLAYER_NAME..."
-add_challenges "$FIRST_PLAYER_TOKEN"
+# Lancer la partie
+echo "Lancement de la partie..."
+if start_game "$FIRST_PLAYER_TOKEN"; then
+    # Ajouter les challenges seulement si la partie est lancée
+    echo "Ajout des challenges avec le joueur $FIRST_PLAYER_NAME..."
+    add_challenges "$FIRST_PLAYER_TOKEN"
+else
+    echo "Impossible de continuer car la partie n'a pas pu être lancée"
+    exit 1
+fi
 
 echo "Script terminé avec succès."
 

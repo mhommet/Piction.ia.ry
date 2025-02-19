@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'teams_style.dart';
 import 'challenge_input_page.dart';
+import 'drawing_page.dart';
 
 class Teams extends StatefulWidget {
   final String username;
@@ -14,12 +15,12 @@ class Teams extends StatefulWidget {
   const Teams({super.key, required this.username, required this.gameSessionId});
 
   @override
-  _TeamsState createState() => _TeamsState();
+  State<Teams> createState() => _TeamsState();
 }
 
 class _TeamsState extends State<Teams> {
-  List<String> teamBlue = [];
-  List<String> teamRed = [];
+  final List<String> teamBlue = [];
+  final List<String> teamRed = [];
   Timer? _refreshTimer;
   Timer? _countdownTimer;
   int countdownSeconds = 10;
@@ -32,93 +33,33 @@ class _TeamsState extends State<Teams> {
     _fetchGameSessionData();
   }
 
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
   void _startRefreshTimer() {
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _fetchGameSessionData();
     });
   }
 
-  Future<void> _fetchGameSessionData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken');
-
-    if (token == null) {
-      print('Token non disponible. Redirection vers la page de login nécessaire.');
-      return;
-    }
-
-    // Print session id
-    print('Game session id: ${widget.gameSessionId}');
-
-    final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}');
-
-    try {
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final sessionData = jsonDecode(response.body);
-
-        List<String> newTeamBlue = [];
-        List<String> newTeamRed = [];
-
-        await _fetchPlayerNames(sessionData['blue_team'], newTeamBlue, token);
-        await _fetchPlayerNames(sessionData['red_team'], newTeamRed, token);
-
-        setState(() {
-          teamBlue = newTeamBlue;
-          teamRed = newTeamRed;
-        });
-
-        // Démarrer le compte à rebours uniquement si les deux équipes ont au moins un joueur
-        if (teamBlue.isNotEmpty && teamRed.isNotEmpty && !isCountdownActive) {
-          _startCountdown();
-        }
-      } else {
-        print('Erreur lors de la récupération des données de session: ${response.body}');
-      }
-    } catch (e) {
-      print('Erreur: $e');
-    }
-  }
-
-  Future<void> _fetchPlayerNames(List<dynamic> playerIds, List<String> team, String token) async {
-    team.clear(); // Nettoie les anciens joueurs avant d'ajouter les nouveaux
-    for (var playerId in playerIds) {
-      if (playerId != null) {
-        final playerUrl = Uri.parse('https://pictioniary.wevox.cloud/api/players/$playerId');
-        try {
-          final playerResponse = await http.get(
-            playerUrl,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-          );
-          if (playerResponse.statusCode == 200) {
-            final playerData = jsonDecode(playerResponse.body);
-            team.add(playerData['name']);
-          } else {
-            print('Erreur lors de la récupération des informations du joueur: ${playerResponse.body}');
-          }
-        } catch (e) {
-          print('Erreur: $e');
-        }
-      }
-    }
-  }
-
   void _startCountdown() {
+    if (!mounted) return;
+    
     setState(() {
       isCountdownActive = true;
       countdownSeconds = 10;
     });
+    
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
       setState(() {
         if (countdownSeconds > 0) {
           countdownSeconds--;
@@ -137,11 +78,110 @@ class _TeamsState extends State<Teams> {
     });
   }
 
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    _countdownTimer?.cancel();
-    super.dispose();
+  Future<void> _fetchGameSessionData() async {
+    if (!mounted) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Token non disponible')),
+        );
+      }
+      return;
+    }
+
+    try {
+      final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}');
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final sessionData = jsonDecode(response.body);
+        
+        if (sessionData['status'] == 'drawing') {
+          _refreshTimer?.cancel();
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DrawingPage(
+                  key: const Key('drawingPage'),
+                  gameSessionId: widget.gameSessionId,
+                ),
+              ),
+            );
+          }
+          return;
+        }
+
+        final List<String> newTeamBlue = [];
+        final List<String> newTeamRed = [];
+
+        await _fetchPlayerNames(sessionData['blue_team'], newTeamBlue, token);
+        await _fetchPlayerNames(sessionData['red_team'], newTeamRed, token);
+
+        if (!mounted) return;
+
+        setState(() {
+          teamBlue.clear();
+          teamBlue.addAll(newTeamBlue);
+          teamRed.clear();
+          teamRed.addAll(newTeamRed);
+        });
+
+        if (teamBlue.isNotEmpty && teamRed.isNotEmpty && !isCountdownActive) {
+          _startCountdown();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _fetchPlayerNames(List<dynamic> playerIds, List<String> team, String token) async {
+    team.clear();
+    for (var playerId in playerIds) {
+      if (playerId != null) {
+        final playerUrl = Uri.parse('https://pictioniary.wevox.cloud/api/players/$playerId');
+        try {
+          final playerResponse = await http.get(
+            playerUrl,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          );
+          if (playerResponse.statusCode == 200) {
+            final playerData = jsonDecode(playerResponse.body);
+            team.add(playerData['name']);
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Erreur: ${playerResponse.body}')),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Erreur: $e')),
+            );
+          }
+        }
+      }
+    }
   }
 
   @override

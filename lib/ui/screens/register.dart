@@ -5,10 +5,10 @@ import 'identification.dart'; // Importer la page login
 import 'identification_style.dart';
 
 class Register extends StatefulWidget {
-  const Register({required Key key}) : super(key: key);
+  const Register({super.key});
 
   @override
-  _RegisterState createState() => _RegisterState();
+  State<Register> createState() => _RegisterState();
 }
 
 class _RegisterState extends State<Register> {
@@ -19,58 +19,53 @@ class _RegisterState extends State<Register> {
 
   // Fonction pour envoyer la requête de register à l'API
   Future<void> _register(BuildContext context) async {
-    if (!_formKey.currentState!.validate()) {
-      return; // Si le formulaire n'est pas valide, on arrête l'exécution
-    }
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    
+    if (!mounted) return;
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      isLoading = true; // Démarrer le loader
-    });
-
-    final url = Uri.parse('https://pictioniary.wevox.cloud/api/players');
-    final body = jsonEncode({
-      'name': _usernameController.text,
-      'password': _passwordController.text,
-    });
+    setState(() => isLoading = true);
 
     try {
+      final url = Uri.parse('https://pictioniary.wevox.cloud/api/players');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: body,
+        body: jsonEncode({
+          'name': _usernameController.text,
+          'password': _passwordController.text,
+        }),
       );
 
+      if (!mounted) return;
+
       if (response.statusCode == 201) {
-        // Si l'enregistrement est réussi
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           const SnackBar(content: Text('Account created successfully!')),
         );
 
-        // Rediriger vers la page login après création de compte
-        Navigator.pushReplacement(
-          context,
+        if (!mounted) return;
+        navigator.pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const Identification(
-              key: Key('loginPage'),
-            ),
+            builder: (context) => const Identification(key: Key('loginPage')),
           ),
         );
       } else {
-        // Gérer les erreurs d'enregistrement
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           SnackBar(content: Text('Registration failed: ${response.body}')),
         );
       }
     } catch (e) {
-      print('Erreur: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
         SnackBar(content: Text('An error occurred: $e')),
       );
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
-
-    setState(() {
-      isLoading = false; // Arrêter le loader après la requête
-    });
   }
 
   @override

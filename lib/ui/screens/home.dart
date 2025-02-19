@@ -6,28 +6,39 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'teams.dart';
 import 'qr_code_scanner.dart';
 
-class Home extends StatelessWidget {
+class Home extends StatefulWidget {
   final String username;
 
-  const Home({required Key key, required this.username}) : super(key: key);
+  const Home({super.key, required this.username});
 
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
   Future<void> _saveUsername() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('username', username);
+    await prefs.setString('username', widget.username);
   }
 
   Future<void> _createGameSession(BuildContext context) async {
+    if (!context.mounted) return;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    
+    await _saveUsername();
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('authToken');
-    await _saveUsername();
 
+    if (!context.mounted) return;
     if (token == null) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(content: Text('Token non disponible')),
+      );
       return;
     }
 
-    final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions');
-
     try {
+      final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions');
       final response = await http.post(
         url,
         headers: {
@@ -36,29 +47,40 @@ class Home extends StatelessWidget {
         },
       );
 
+      if (!context.mounted) return;
+
       if (response.statusCode == 201) {
         final jsonResponse = jsonDecode(response.body);
         final gameSessionId = jsonResponse['id'];
-        await _joinGameSession(context, gameSessionId, token);
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => Teams(
-              username: username,
-              gameSessionId: gameSessionId,
+        
+        final success = await _joinGameSession(scaffoldMessenger, gameSessionId, token);
+        
+        if (!context.mounted) return;
+        if (success) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => Teams(
+                username: widget.username,
+                gameSessionId: gameSessionId,
+              ),
             ),
-          ),
-        );
+          );
+        }
       } else {
-        print('Erreur lors de la création de la session: ${response.body}');
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Erreur lors de la création de la session: ${response.body}')),
+        );
       }
     } catch (e) {
-      print('Erreur: $e');
+      if (!context.mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Erreur: $e')),
+      );
     }
   }
 
-  Future<void> _joinGameSession(BuildContext context, int gameSessionId, String token) async {
+  Future<bool> _joinGameSession(ScaffoldMessengerState scaffoldMessenger, int gameSessionId, String token) async {
     await _saveUsername();
     final sessionUrl = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/$gameSessionId');
 
@@ -71,15 +93,11 @@ class Home extends StatelessWidget {
         },
       );
 
+      if (!mounted) return false;
+
       if (sessionResponse.statusCode == 200) {
         final sessionData = jsonDecode(sessionResponse.body);
-        String color;
-
-        if ((sessionData['blue_team'] as List).length < 2) {
-          color = "blue";
-        } else {
-          color = "red";
-        }
+        String color = (sessionData['blue_team'] as List).length < 2 ? "blue" : "red";
 
         final joinUrl = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/$gameSessionId/join');
         final joinResponse = await http.post(
@@ -91,17 +109,30 @@ class Home extends StatelessWidget {
           body: jsonEncode({'color': color}),
         );
 
+        if (!mounted) return false;
+
         if (joinResponse.statusCode == 200) {
-          print('Joueur rejoint la session avec succès dans l\'équipe $color');
+          scaffoldMessenger.showSnackBar(
+            SnackBar(content: Text('Joueur rejoint la session avec succès dans l\'équipe $color')),
+          );
+          return true;
         } else {
-          print('Erreur lors du join de la session: ${joinResponse.body}');
+          scaffoldMessenger.showSnackBar(
+            SnackBar(content: Text('Erreur lors du join de la session: ${joinResponse.body}')),
+          );
         }
       } else {
-        print('Erreur lors de la récupération des données de session: ${sessionResponse.body}');
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Erreur lors de la récupération des données de session: ${sessionResponse.body}')),
+        );
       }
     } catch (e) {
-      print('Erreur: $e');
+      if (!mounted) return false;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Erreur: $e')),
+      );
     }
+    return false;
   }
 
   @override
@@ -125,7 +156,7 @@ class Home extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Text(
-                'Welcome $username',
+                'Welcome ${widget.username}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 30,

@@ -7,10 +7,10 @@ import 'home.dart'; // Importer la page Home
 import 'register.dart'; // Importer la page Register
 
 class Identification extends StatefulWidget {
-  const Identification({required Key key}) : super(key: key);
+  const Identification({super.key});
 
   @override
-  _IdentificationState createState() => _IdentificationState();
+  State<Identification> createState() => _IdentificationState();
 }
 
 class _IdentificationState extends State<Identification> {
@@ -21,42 +21,37 @@ class _IdentificationState extends State<Identification> {
 
   // Fonction pour envoyer la requête de login à l'API
   Future<void> _login(BuildContext context) async {
-    if (!_formKey.currentState!.validate()) {
-      return; // Si le formulaire n'est pas valide, on arrête l'exécution
-    }
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    
+    if (!mounted) return;
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      isLoading = true; // Démarrer le loader
-    });
-
-    final url = Uri.parse('https://pictioniary.wevox.cloud/api/login');
-    final body = jsonEncode({
-      'name': _usernameController.text,
-      'password': _passwordController.text,
-    });
+    setState(() => isLoading = true);
 
     try {
+      final url = Uri.parse('https://pictioniary.wevox.cloud/api/login');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: body,
+        body: jsonEncode({
+          'name': _usernameController.text,
+          'password': _passwordController.text,
+        }),
       );
 
-      if (response.statusCode == 200) {
-        // Si la connexion est réussie, on parse la réponse
-        final jsonResponse = jsonDecode(response.body);
+      if (!mounted) return;
 
-        // Récupérer le token de la réponse JSON
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
         final token = jsonResponse['token'];
 
-        // Enregistrer le token dans les préférences partagées
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('authToken', token);
         await prefs.setString('name', _usernameController.text);
 
-        // Rediriger vers la page Home si le login est réussi
-        Navigator.pushReplacement(
-          context,
+        if (!mounted) return;
+        navigator.pushReplacement(
           MaterialPageRoute(
             builder: (context) => Home(
               username: _usernameController.text,
@@ -65,21 +60,20 @@ class _IdentificationState extends State<Identification> {
           ),
         );
       } else {
-        // Gérer les erreurs de login
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           SnackBar(content: Text('Login failed: ${response.body}')),
         );
       }
     } catch (e) {
-      print('Erreur: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
         SnackBar(content: Text('An error occurred: $e')),
       );
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
-
-    setState(() {
-      isLoading = false; // Arrêter le loader après la requête
-    });
   }
 
   @override

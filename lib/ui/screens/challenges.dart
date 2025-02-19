@@ -5,7 +5,7 @@ class Challenges extends StatefulWidget {
   const Challenges({super.key});
 
   @override
-  _ChallengesState createState() => _ChallengesState();
+  State<Challenges> createState() => _ChallengesState();
 }
 
 class _ChallengesState extends State<Challenges> {

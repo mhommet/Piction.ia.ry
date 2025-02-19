@@ -14,19 +14,27 @@ class QRCodeScannerPage extends StatefulWidget {
 
 class _QRCodeScannerPageState extends State<QRCodeScannerPage> {
   bool hasScanned = false; // Empêche de scanner plusieurs fois
+  int gameSessionId = -1;  // Default value instead of nullable
 
-  Future<void> _getSessionAndJoin(BuildContext context, int gameSessionId) async {
+  Future<void> _getSessionAndJoin(BuildContext context, int sessionId) async {
+    gameSessionId = sessionId;
+    if (!context.mounted) return;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('authToken');
 
+    if (!context.mounted) return;
     if (token == null) {
-      print('Token non disponible. Redirection vers la page de login nécessaire.');
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(content: Text('Token non disponible')),
+      );
       return;
     }
 
-    final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/$gameSessionId');
-
     try {
+      final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/$sessionId');
       final response = await http.get(
         url,
         headers: {
@@ -35,37 +43,37 @@ class _QRCodeScannerPageState extends State<QRCodeScannerPage> {
         },
       );
 
+      if (!context.mounted) return;
+
       if (response.statusCode == 200) {
         final sessionData = jsonDecode(response.body);
-
-        String color;
-        if (sessionData['blue_team'].length < 2) {
-          color = "blue";
-        } else if (sessionData['red_team'].length < 2) {
-          color = "red";
-        } else {
-          print("Les équipes sont pleines.");
-          return;
-        }
-
-        await _joinGameSession(context, gameSessionId, color);
+        String color = (sessionData['blue_team'] as List).length < 2 ? "blue" : "red";
+        await _joinGameSession(scaffoldMessenger, sessionId, color, token);
+        
+        if (!context.mounted) return;
+        final username = prefs.getString('username') ?? 'Joueur';
+        navigator.pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => Teams(
+              username: username,
+              gameSessionId: sessionId,
+            ),
+          ),
+        );
       } else {
-        print('Erreur lors de la récupération de la session: ${response.body}');
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Erreur lors de la récupération de la session: ${response.body}')),
+        );
       }
     } catch (e) {
-      print('Erreur: $e');
+      if (!context.mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Erreur: $e')),
+      );
     }
   }
 
-  Future<void> _joinGameSession(BuildContext context, int gameSessionId, String color) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken');
-
-    if (token == null) {
-      print('Token non disponible. Redirection vers la page de login nécessaire.');
-      return;
-    }
-
+  Future<void> _joinGameSession(ScaffoldMessengerState scaffoldMessenger, int gameSessionId, String color, String token) async {
     final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/$gameSessionId/join');
 
     try {
@@ -79,29 +87,19 @@ class _QRCodeScannerPageState extends State<QRCodeScannerPage> {
       );
 
       if (response.statusCode == 200) {
-        print('Joueur rejoint la session avec succès dans l\'équipe $color');
-        _navigateToTeamsPage(context, gameSessionId);
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Joueur rejoint la session avec succès dans l\'équipe $color')),
+        );
       } else {
-        print('Erreur lors du join de la session: ${response.body}');
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Erreur lors du join de la session: ${response.body}')),
+        );
       }
     } catch (e) {
-      print('Erreur: $e');
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Erreur: $e')),
+      );
     }
-  }
-
-  void _navigateToTeamsPage(BuildContext context, int gameSessionId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final username = prefs.getString('username') ?? 'Joueur';
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Teams(
-          username: username,
-          gameSessionId: gameSessionId,
-        ),
-      ),
-    );
   }
 
   @override
@@ -113,17 +111,21 @@ class _QRCodeScannerPageState extends State<QRCodeScannerPage> {
       body: MobileScanner(
         onDetect: (capture) async {
           final List<Barcode> barcodes = capture.barcodes;
-          final Barcode? barcode = barcodes.first;
-          if (!hasScanned && barcode?.rawValue != null) {
+          if (barcodes.isEmpty) return;
+          
+          final Barcode barcode = barcodes.first;
+          if (!hasScanned && barcode.rawValue != null) {
             setState(() {
               hasScanned = true;
             });
 
-            int gameSessionId = int.tryParse(barcode!.rawValue!) ?? -1;
-            if (gameSessionId != -1) {
-              await _getSessionAndJoin(context, gameSessionId);
+            int sessionId = int.tryParse(barcode.rawValue!) ?? -1;
+            if (sessionId != -1) {
+              await _getSessionAndJoin(context, sessionId);
             } else {
-              print("QR code invalide");
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('QR code invalide')),
+              );
             }
           }
         },

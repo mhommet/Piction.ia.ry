@@ -11,7 +11,7 @@ class ChallengeInputPage extends StatefulWidget {
   const ChallengeInputPage({super.key, required this.gameSessionId});
 
   @override
-  _ChallengeInputPageState createState() => _ChallengeInputPageState();
+  State<ChallengeInputPage> createState() => _ChallengeInputPageState();
 }
 
 class _ChallengeInputPageState extends State<ChallengeInputPage> {
@@ -20,28 +20,34 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
   String thirdWord = 'sur';
 
   Future<void> submitChallenges() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    
+    if (!mounted) return;
+
     final started = await _startChallengeMode();
     if (!started) {
-      print('Échec du démarrage du mode challenge');
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(content: Text('Échec du démarrage du mode challenge')),
+      );
       return;
     }
+
     final url = Uri.parse(
         'https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/challenges');
     final token = await getToken();
 
     if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("Token d'authentification non disponible.")),
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(content: Text("Token d'authentification non disponible.")),
       );
       return;
     }
 
     for (var challenge in challenges) {
       try {
-        print("Request URI: $url");
-        print("Request Body: ${jsonEncode(challenge)}");
-
         final response = await http.post(
           url,
           headers: {
@@ -51,29 +57,22 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
           body: jsonEncode(challenge),
         );
 
-        if (response.statusCode == 200) {
-          print("Défi ajouté avec succès");
-        } else {
-          print("Status Code: ${response.statusCode}");
-          print("Response Body: ${response.body}");
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Erreur API : ${response.statusCode}\n${response.body}',
-              ),
-            ),
+        if (!mounted) return;
+        if (response.statusCode != 200) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(content: Text('Erreur API : ${response.statusCode}\n${response.body}')),
           );
         }
       } catch (e) {
-        print("Erreur lors de l'envoi de la requête : $e");
-        ScaffoldMessenger.of(context).showSnackBar(
+        if (!mounted) return;
+        scaffoldMessenger.showSnackBar(
           SnackBar(content: Text('Erreur de connexion : $e')),
         );
       }
     }
-    Navigator.pushReplacement(
-      context,
+
+    if (!mounted) return;
+    navigator.pushReplacement(
       MaterialPageRoute(
         builder: (context) => Loading(challenges: challenges),
       ),
@@ -81,11 +80,16 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
   }
 
   Future<bool> _startChallengeMode() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    
+    if (!mounted) return false;
+    
     final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/start');
     final token = await getToken();
 
     if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return false;
+      scaffoldMessenger.showSnackBar(
         const SnackBar(content: Text("Token d'authentification non disponible.")),
       );
       return false;
@@ -99,24 +103,14 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
           'Authorization': 'Bearer $token',
         },
       );
-
-      if (response.statusCode == 200) {
-        print("Mode challenge démarré avec succès");
-        return true;
-      } else {
-        print("Erreur lors du démarrage du mode challenge: ${response.body}");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur API : ${response.statusCode}\n${response.body}')),
-        );
-      }
+      return response.statusCode == 200;
     } catch (e) {
-      print("Erreur lors de l'envoi de la requête : $e");
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return false;
+      scaffoldMessenger.showSnackBar(
         SnackBar(content: Text('Erreur de connexion : $e')),
       );
       return false;
     }
-    return false;
   }
 
   Future<String?> getToken() async {
