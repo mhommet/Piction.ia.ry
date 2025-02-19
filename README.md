@@ -1,22 +1,34 @@
-# piction_ia_ry
+# Piction IA ry
 
-A new Flutter project.
+Une application Flutter de jeu de dessin collaboratif utilisant l'IA pour générer des images.
 
-## Getting Started
+## Description
 
-This project is a starting point for a Flutter application.
+Piction IA ry est un jeu où les joueurs doivent :
+1. Créer des défis composés de 5 mots et 3 mots interdits
+2. Générer des images à partir de descriptions textuelles (sans utiliser les mots interdits)
+3. Deviner les défis des autres joueurs à partir des images générées
 
-A few resources to get you started if this is your first Flutter project:
+## Installation
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+1. Cloner le repository
+2. Installer Flutter
+3. Exécuter `flutter pub get`
+4. Lancer l'application avec `flutter run`
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Configuration rapide d'une partie test
 
+Un script bash est disponible pour configurer rapidement une partie avec des joueurs et défis de test.
 
-TODO: 
+### Utilisation du script
 
-- hero
-- staggered_animations
+```bash
+./setup_game.sh <game_session_id>
+```
+
+Le script va :
+- Ajouter 3 joueurs à la session
+- Créer 3 défis pour chaque joueur
+- Configurer automatiquement la partie
+
+Lancer le script dans la page des équipes puis attendre que le script dise "Configuration de la partie terminée avec succès" et ensuite ajouter les trois défis dans l'app à la main.
