@@ -19,8 +19,12 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
   String firstWord = 'une';
   String thirdWord = 'sur';
 
-  // Méthode pour envoyer les défis à la session
   Future<void> submitChallenges() async {
+    final started = await _startChallengeMode();
+    if (!started) {
+      print('Échec du démarrage du mode challenge');
+      return;
+    }
     final url = Uri.parse(
         'https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/challenges');
     final token = await getToken();
@@ -33,11 +37,8 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
       return;
     }
 
-    bool allChallengesAdded = true;
-
     for (var challenge in challenges) {
       try {
-        // Log de la requête
         print("Request URI: $url");
         print("Request Body: ${jsonEncode(challenge)}");
 
@@ -50,11 +51,9 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
           body: jsonEncode(challenge),
         );
 
-        // Vérifier si la requête a échoué
         if (response.statusCode == 200) {
           print("Défi ajouté avec succès");
         } else {
-          allChallengesAdded = false;
           print("Status Code: ${response.statusCode}");
           print("Response Body: ${response.body}");
 
@@ -67,22 +66,21 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
           );
         }
       } catch (e) {
-        allChallengesAdded = false;
         print("Erreur lors de l'envoi de la requête : $e");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur de connexion : $e')),
         );
       }
     }
-
-    // Redirection uniquement si tous les défis ont été ajoutés
-    if (allChallengesAdded) {
-      await _startChallengeMode();
-    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Loading(challenges: challenges),
+      ),
+    );
   }
 
-  // Méthode pour démarrer le mode challenge
-  Future<void> _startChallengeMode() async {
+  Future<bool> _startChallengeMode() async {
     final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/start');
     final token = await getToken();
 
@@ -90,7 +88,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Token d'authentification non disponible.")),
       );
-      return;
+      return false;
     }
 
     try {
@@ -104,12 +102,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
 
       if (response.statusCode == 200) {
         print("Mode challenge démarré avec succès");
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => Loading(challenges: challenges),
-          ),
-        );
+        return true;
       } else {
         print("Erreur lors du démarrage du mode challenge: ${response.body}");
         ScaffoldMessenger.of(context).showSnackBar(
@@ -121,8 +114,11 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur de connexion : $e')),
       );
+      return false;
     }
+    return false;
   }
+
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('authToken');
@@ -147,7 +143,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Sélection du premier mot (une/un)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -181,7 +176,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  // Champ pour le deuxième mot
                   TextField(
                     decoration:
                         const InputDecoration(hintText: 'Mot 1 (ex. poule)'),
@@ -190,7 +184,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  // Sélection du troisième mot (sur/dans)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -224,7 +217,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  // Champ pour le quatrième mot
                   TextField(
                     decoration:
                         const InputDecoration(hintText: 'Mot 2 (ex. un)'),
@@ -233,7 +225,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  // Champ pour le cinquième mot
                   TextField(
                     decoration:
                         const InputDecoration(hintText: 'Mot 3 (ex. mur)'),
@@ -242,7 +233,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  // Ajout de tags (mots interdits)
                   TextField(
                     decoration:
                         const InputDecoration(labelText: 'Mot interdit'),
@@ -294,7 +284,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                         });
                       });
 
-                      Navigator.of(context).pop(); // Fermer le modal
+                      Navigator.of(context).pop();
                     },
                     child: const Text('Ajouter Défi'),
                   ),

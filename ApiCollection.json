@@ -1,0 +1,498 @@
+{
+	"info": {
+		"_postman_id": "040500b7-6953-427b-b0b6-53f5f8edef15",
+		"name": "M2_Flutter",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "11129555",
+		"_collection_link": "https://solar-spaceship-479982.postman.co/workspace/b9b1c0f7-3caa-43a8-89e7-c761ab6782cf/collection/11129555-040500b7-6953-427b-b0b6-53f5f8edef15?action=share&source=collection_link&creator=11129555"
+	},
+	"item": [
+		{
+			"name": "Créer un joueur",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\":\"Amandine9\",\n    \"password\":\"Testtest24!\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/api/players",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"players"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\":\"Amandine9\",\n    \"password\":\"Testtest24!\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/api/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Récupérer un joueur",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTAsIm5hbWUiOiJBbWFuZGluZSJ9.Rh7psY5manOCnWqvcdOV6o8EWohCzwVME7z2KFFjPfU",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8000/api/players/10",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"players",
+						"10"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Créer une session de jeu",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MiwibmFtZSI6IkFtYW5kaW5lIn0.W8iBlmtul0XQHWBSxEAH66KUj5XKQqjXj-dBiQYNygQ",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "localhost:8000/api/game_sessions",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"game_sessions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Récupèrer session de jeu",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTAsIm5hbWUiOiJBbWFuZGluZSJ9.Rh7psY5manOCnWqvcdOV6o8EWohCzwVME7z2KFFjPfU",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/api/game_sessions/3",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"game_sessions",
+						"3"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Rejoindre une session de jeu",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6NCwibmFtZSI6IkFtYW5kaW5lMyJ9.zAJu8XaqvxdzUt-YqGqgBzB6QaPeAc3G9inTDjXWAOI",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"color\":\"red\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8000/api/game_sessions/3/join",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"game_sessions",
+						"3",
+						"join"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Quitter une session de jeu",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTAsIm5hbWUiOiJBbWFuZGluZSJ9.Rh7psY5manOCnWqvcdOV6o8EWohCzwVME7z2KFFjPfU",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://pictioniary.wevox.cloud/api/game_sessions/3/leave",
+					"protocol": "https",
+					"host": [
+						"pictioniary",
+						"wevox",
+						"cloud"
+					],
+					"path": [
+						"api",
+						"game_sessions",
+						"3",
+						"leave"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Récupérer le statut d'une session",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTAsIm5hbWUiOiJBbWFuZGluZSJ9.Rh7psY5manOCnWqvcdOV6o8EWohCzwVME7z2KFFjPfU",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8000/api/game_sessions/3/status",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"game_sessions",
+						"3",
+						"status"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Récupération d'un session",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MiwibmFtZSI6IkFtYW5kaW5lIn0.W8iBlmtul0XQHWBSxEAH66KUj5XKQqjXj-dBiQYNygQ",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8000/api/game_sessions/3",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"game_sessions",
+						"3"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Lancer la phase de challenge",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MiwibmFtZSI6IkFtYW5kaW5lIn0.W8iBlmtul0XQHWBSxEAH66KUj5XKQqjXj-dBiQYNygQ",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "localhost:8000/api/game_sessions/3/start",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"game_sessions",
+						"3",
+						"start"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Envoyer un challenge",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTAsIm5hbWUiOiJBbWFuZGluZTkifQ.GBQUT2ivTw9PZVrI6DE84sidU_4g9vQgBaNdIIlITQM",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"first_word\" : \"une\",\n    \"second_word\" : \"poule\",\n    \"third_word\" : \"sur\",\n    \"fourth_word\" : \"un\",\n    \"fifth_word\" : \"mur\",\n    \"forbidden_words\" : [\"volaille\", \"brique\", \"poulet\"]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8000/api/game_sessions/3/challenges",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"game_sessions",
+						"3",
+						"challenges"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Affiche les challenges",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTAsIm5hbWUiOiJBbWFuZGluZSJ9.Rh7psY5manOCnWqvcdOV6o8EWohCzwVME7z2KFFjPfU",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8000/api/game_sessions/3/challenges",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"game_sessions",
+						"3",
+						"challenges"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Afficher mes challenges",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTAsIm5hbWUiOiJBbWFuZGluZSJ9.Rh7psY5manOCnWqvcdOV6o8EWohCzwVME7z2KFFjPfU",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8000/api/game_sessions/3/myChallenges",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"game_sessions",
+						"3",
+						"myChallenges"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Dessiner un challange",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTAsIm5hbWUiOiJBbWFuZGluZSJ9.Rh7psY5manOCnWqvcdOV6o8EWohCzwVME7z2KFFjPfU",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"prompt\" : \"Vive le vent d'hivers\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8000/api/game_sessions/3/challenges/3/draw",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"game_sessions",
+						"3",
+						"challenges",
+						"3",
+						"draw"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "Token",
+			"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTAsIm5hbWUiOiJBbWFuZGluZSJ9.Rh7psY5manOCnWqvcdOV6o8EWohCzwVME7z2KFFjPfU"
+		}
+	]
+}
