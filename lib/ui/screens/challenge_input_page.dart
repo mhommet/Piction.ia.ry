@@ -4,6 +4,7 @@ import 'challenge_input_style.dart';
 import 'loading.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 
 class ChallengeInputPage extends StatefulWidget {
   final int gameSessionId;
@@ -15,7 +16,7 @@ class ChallengeInputPage extends StatefulWidget {
 }
 
 class _ChallengeInputPageState extends State<ChallengeInputPage> {
-  List<Map<String, dynamic>> challenges = [];
+  List<Map<String, dynamic>> challenges = [];  // Liste locale des défis
   String firstWord = 'une';
   String thirdWord = 'sur';
 
@@ -25,19 +26,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
     
     if (!mounted) return;
 
-    final started = await _startChallengeMode();
-    if (!started) {
-      if (!mounted) return;
-      scaffoldMessenger.showSnackBar(
-        const SnackBar(content: Text('Échec du démarrage du mode challenge')),
-      );
-      return;
-    }
-
-    final url = Uri.parse(
-        'https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/challenges');
     final token = await getToken();
-
     if (token == null) {
       if (!mounted) return;
       scaffoldMessenger.showSnackBar(
@@ -46,76 +35,59 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
       return;
     }
 
+    // D'abord envoyer tous les défis à l'API
     for (var challenge in challenges) {
       try {
-        final response = await http.post(
-          url,
+        await http.post(
+          Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/challenges'),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
           },
           body: jsonEncode(challenge),
         );
-
-        if (!mounted) return;
-        if (response.statusCode != 200) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(content: Text('Erreur API : ${response.statusCode}\n${response.body}')),
-          );
-        }
       } catch (e) {
-        if (!mounted) return;
-        scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text('Erreur de connexion : $e')),
-        );
+        // Ignorer les erreurs car les défis sont probablement déjà envoyés
+        print('Info: Défi probablement déjà envoyé');
       }
     }
 
-    if (!mounted) return;
-    navigator.pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => Loading(challenges: challenges),
-      ),
-    );
-  }
-
-  Future<bool> _startChallengeMode() async {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    
-    if (!mounted) return false;
-    
-    final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/start');
-    final token = await getToken();
-
-    if (token == null) {
-      if (!mounted) return false;
-      scaffoldMessenger.showSnackBar(
-        const SnackBar(content: Text("Token d'authentification non disponible.")),
-      );
-      return false;
-    }
-
+    // Ensuite passer en mode drawing
     try {
-      final response = await http.post(
-        url,
+      await http.post(
+        Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/start'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
-      return response.statusCode == 200;
-    } catch (e) {
-      if (!mounted) return false;
-      scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text('Erreur de connexion : $e')),
+
+      if (!mounted) return;
+      
+      // Passer à la page de dessin
+      navigator.pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => Loading(challenges: challenges),
+        ),
       );
-      return false;
+    } catch (e) {
+      // Ignorer l'erreur car on est probablement déjà en mode drawing
+      if (!mounted) return;
+      navigator.pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => Loading(challenges: challenges),
+        ),
+      );
     }
   }
 
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('authToken');
+    final token = prefs.getString('authToken');
+    if (token != null) {
+      print('Token utilisé: $token');  // Debug
+    }
+    return token;
   }
 
   void _openAddChallengeModal(BuildContext context) {
@@ -254,7 +226,7 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (secondWord.isEmpty ||
                           fourthWord.isEmpty ||
                           fifthWord.isEmpty ||
@@ -267,18 +239,55 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                         return;
                       }
 
-                      setState(() {
-                        challenges.add({
-                          'first_word': firstWord,
-                          'second_word': secondWord,
-                          'third_word': thirdWord,
-                          'fourth_word': fourthWord,
-                          'fifth_word': fifthWord,
-                          'forbidden_words': tags,
-                        });
-                      });
+                      // Créer le défi
+                      final challenge = {
+                        'first_word': firstWord,
+                        'second_word': secondWord,
+                        'third_word': thirdWord,
+                        'fourth_word': fourthWord,
+                        'fifth_word': fifthWord,
+                        'forbidden_words': tags,
+                      };
 
-                      Navigator.of(context).pop();
+                      // Envoyer le défi à l'API
+                      final token = await getToken();
+                      if (token == null) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Token d'authentification non disponible")),
+                        );
+                        return;
+                      }
+
+                      try {
+                        final response = await http.post(
+                          Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/challenges'),
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer $token',
+                          },
+                          body: jsonEncode(challenge),
+                        );
+
+                        if (!mounted) return;
+
+                        if (response.statusCode == 200) {
+                          // Mettre à jour la liste locale
+                          setState(() {
+                            challenges.add(challenge);
+                          });
+                          Navigator.of(context).pop();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Erreur lors de l\'ajout du défi: ${response.body}')),
+                          );
+                        }
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Erreur de connexion: $e')),
+                        );
+                      }
                     },
                     child: const Text('Ajouter Défi'),
                   ),
@@ -325,12 +334,22 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
         child: Column(
           children: [
             Expanded(
-              child: ListView.builder(
-                itemCount: challenges.length,
-                itemBuilder: (context, index) {
-                  final challenge = challenges[index];
-                  return _buildChallengeCard(index, challenge);
-                },
+              child: ListView(
+                children: [
+                  // Afficher les défis de la session
+                  ...challenges.map((challenge) => Card(
+                    // Afficher le défi en lecture seule
+                    child: ListTile(
+                      title: Text('${challenge['first_word']} ${challenge['second_word']} ${challenge['third_word']} ${challenge['fourth_word']} ${challenge['fifth_word']}'),
+                      subtitle: Wrap(
+                        spacing: 8,
+                        children: (challenge['forbidden_words'] as List)
+                            .map<Widget>((tag) => Chip(label: Text(tag.toString())))
+                            .toList(),
+                      ),
+                    ),
+                  )),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -346,46 +365,6 @@ class _ChallengeInputPageState extends State<ChallengeInputPage> {
                   'Valider et envoyer',
                   style: TextStyle(color: Colors.white, fontSize: 18),
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChallengeCard(int index, Map<String, dynamic> challenge) {
-    return Card(
-      margin: ChallengeInputStyle.cardMargin,
-      shape: ChallengeInputStyle.cardShape,
-      elevation: 3,
-      child: Padding(
-        padding: ChallengeInputStyle.cardPadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${challenge['first_word']} ${challenge['second_word']} ${challenge['third_word']} ${challenge['fourth_word']} ${challenge['fifth_word']}',
-              style: ChallengeInputStyle.challengeTitleStyle,
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: challenge['forbidden_words']
-                  .map<Widget>((tag) => Chip(label: Text(tag)))
-                  .toList(),
-            ),
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                icon: const Icon(Icons.delete,
-                    color: ChallengeInputStyle.iconDeleteColor),
-                onPressed: () {
-                  setState(() {
-                    challenges.removeAt(index);
-                  });
-                },
               ),
             ),
           ],

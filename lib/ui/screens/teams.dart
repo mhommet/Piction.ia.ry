@@ -54,7 +54,7 @@ class _TeamsState extends State<Teams> {
       countdownSeconds = 10;
     });
     
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       if (!mounted) {
         timer.cancel();
         return;
@@ -65,6 +65,40 @@ class _TeamsState extends State<Teams> {
           countdownSeconds--;
         } else {
           _countdownTimer?.cancel();
+          _startChallengePhase();
+        }
+      });
+    });
+  }
+
+  Future<void> _startChallengePhase() async {
+    if (!mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Token non disponible')),
+      );
+      return;
+    }
+
+    try {
+      final url = Uri.parse('https://pictioniary.wevox.cloud/api/game_sessions/${widget.gameSessionId}/start');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        if (jsonResponse['status'] == 'challenge') {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -73,9 +107,22 @@ class _TeamsState extends State<Teams> {
               ),
             ),
           );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Erreur: La session n\'est pas passée en mode challenge')),
+          );
         }
-      });
-    });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du démarrage de la phase challenge: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: $e')),
+      );
+    }
   }
 
   Future<void> _fetchGameSessionData() async {
@@ -250,6 +297,12 @@ class _TeamsState extends State<Teams> {
                   textAlign: TextAlign.center,
                 ),
               TeamsStyle.spacing30,
+              Text(
+                'Session ID: ${widget.gameSessionId}',
+                style: TeamsStyle.infoTextStyle,
+                textAlign: TextAlign.center,
+              ),
+              TeamsStyle.spacing20,
               Center(
                 child: QrImageView(
                   data: widget.gameSessionId.toString(),
